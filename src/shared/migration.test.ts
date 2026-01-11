@@ -7,8 +7,6 @@ import {
   migrateAgentNames,
   migrateHookNames,
   migrateConfigFile,
-  migrateAgentConfigToCategory,
-  shouldDeleteAgentConfig,
 } from "./migration"
 
 describe("migrateAgentNames", () => {
@@ -244,202 +242,6 @@ describe("migration maps", () => {
   })
 })
 
-describe("migrateAgentConfigToCategory", () => {
-  test("migrates model to category when mapping exists", () => {
-    // #given: Config with a model that has a category mapping
-    const config = {
-      model: "google/antigravity-gemini-3-pro-high",
-      temperature: 0.5,
-      top_p: 0.9,
-    }
-
-    // #when: Migrate agent config to category
-    const { migrated, changed } = migrateAgentConfigToCategory(config)
-
-    // #then: Model should be replaced with category
-    expect(changed).toBe(true)
-    expect(migrated.category).toBe("research")
-    expect(migrated.model).toBeUndefined()
-    expect(migrated.temperature).toBe(0.5)
-    expect(migrated.top_p).toBe(0.9)
-  })
-
-  test("does not migrate when model is not in map", () => {
-    // #given: Config with a model that has no mapping
-    const config = {
-      model: "custom/model",
-      temperature: 0.5,
-    }
-
-    // #when: Migrate agent config to category
-    const { migrated, changed } = migrateAgentConfigToCategory(config)
-
-    // #then: Config should remain unchanged
-    expect(changed).toBe(false)
-    expect(migrated).toEqual(config)
-  })
-
-  test("does not migrate when model is not a string", () => {
-    // #given: Config with non-string model
-    const config = {
-      model: { name: "test" },
-      temperature: 0.5,
-    }
-
-    // #when: Migrate agent config to category
-    const { migrated, changed } = migrateAgentConfigToCategory(config)
-
-    // #then: Config should remain unchanged
-    expect(changed).toBe(false)
-    expect(migrated).toEqual(config)
-  })
-
-  test("handles all mapped models correctly", () => {
-    // #given: Configs for each mapped model
-    const configs = [
-      { model: "google/antigravity-gemini-3-pro-high" },
-      { model: "google/antigravity-claude-sonnet-4-5" },
-      { model: "google/antigravity-gemini-3-flash" },
-      { model: "google/antigravity-claude-opus-4-5-thinking-high" },
-    ]
-
-    const expectedCategories = ["research", "archive", "quick", "writing"]
-
-    // #when: Migrate each config
-    const results = configs.map(migrateAgentConfigToCategory)
-
-    // #then: Each model should map to correct category
-    results.forEach((result, index) => {
-      expect(result.changed).toBe(true)
-      expect(result.migrated.category).toBe(expectedCategories[index])
-      expect(result.migrated.model).toBeUndefined()
-    })
-  })
-
-  test("preserves non-model fields during migration", () => {
-    // #given: Config with multiple fields
-    const config = {
-      model: "google/antigravity-gemini-3-pro-high",
-      temperature: 0.1,
-      top_p: 0.95,
-      maxTokens: 4096,
-      prompt_append: "custom instruction",
-    }
-
-    // #when: Migrate agent config to category
-    const { migrated } = migrateAgentConfigToCategory(config)
-
-    // #then: All non-model fields should be preserved
-    expect(migrated.category).toBe("research")
-    expect(migrated.temperature).toBe(0.1)
-    expect(migrated.top_p).toBe(0.95)
-    expect(migrated.maxTokens).toBe(4096)
-    expect(migrated.prompt_append).toBe("custom instruction")
-  })
-})
-
-describe("shouldDeleteAgentConfig", () => {
-  test("returns true when config only has category field", () => {
-    // #given: Config with only category field (no overrides)
-    const config = { category: "research" }
-
-    // #when: Check if config should be deleted
-    const shouldDelete = shouldDeleteAgentConfig(config, "research")
-
-    // #then: Should return true (matches category defaults)
-    expect(shouldDelete).toBe(true)
-  })
-
-  test("returns false when category does not exist", () => {
-    // #given: Config with unknown category
-    const config = { category: "unknown" }
-
-    // #when: Check if config should be deleted
-    const shouldDelete = shouldDeleteAgentConfig(config, "unknown")
-
-    // #then: Should return false (category not found)
-    expect(shouldDelete).toBe(false)
-  })
-
-  test("returns true when all fields match category defaults", () => {
-    // #given: Config with fields matching category defaults
-    const config = {
-      category: "research",
-      model: "google/antigravity-gemini-3-pro-high",
-      temperature: 0.5,
-    }
-
-    // #when: Check if config should be deleted
-    const shouldDelete = shouldDeleteAgentConfig(config, "research")
-
-    // #then: Should return true (all fields match defaults)
-    expect(shouldDelete).toBe(true)
-  })
-
-  test("returns false when fields differ from category defaults", () => {
-    // #given: Config with custom temperature override
-    const config = {
-      category: "research",
-      temperature: 0.9, // Different from default (0.5)
-    }
-
-    // #when: Check if config should be deleted
-    const shouldDelete = shouldDeleteAgentConfig(config, "research")
-
-    // #then: Should return false (has custom override)
-    expect(shouldDelete).toBe(false)
-  })
-
-  test("handles different categories with their defaults", () => {
-    // #given: Configs for different categories
-    const configs = [
-      { category: "research", temperature: 0.5 },
-      { category: "quick", temperature: 0.3 },
-      { category: "writing", temperature: 0.7 },
-      { category: "archive", temperature: 0.3 },
-    ]
-
-    // #when: Check each config
-    const results = configs.map((config) => shouldDeleteAgentConfig(config, config.category as string))
-
-    // #then: All should be true (all match defaults)
-    results.forEach((result) => {
-      expect(result).toBe(true)
-    })
-  })
-
-  test("returns false when additional fields are present", () => {
-    // #given: Config with extra fields
-    const config = {
-      category: "research",
-      temperature: 0.5,
-      custom_field: "value", // Extra field not in defaults
-    }
-
-    // #when: Check if config should be deleted
-    const shouldDelete = shouldDeleteAgentConfig(config, "research")
-
-    // #then: Should return false (has extra field)
-    expect(shouldDelete).toBe(false)
-  })
-
-  test("handles complex config with multiple overrides", () => {
-    // #given: Config with multiple custom overrides
-    const config = {
-      category: "research",
-      temperature: 0.1, // Different from default
-      top_p: 0.8, // Different from default
-      prompt_append: "custom prompt", // Custom field
-    }
-
-    // #when: Check if config should be deleted
-    const shouldDelete = shouldDeleteAgentConfig(config, "research")
-
-    // #then: Should return false (has overrides)
-    expect(shouldDelete).toBe(false)
-  })
-})
-
 describe("migrateConfigFile with backup", () => {
   const cleanupPaths: string[] = []
 
@@ -453,22 +255,17 @@ describe("migrateConfigFile with backup", () => {
   })
 
   test("creates backup file with timestamp when migration needed", () => {
-    // #given: Config file path and config needing migration
     const testConfigPath = "/tmp/test-config-migration.json"
-    const testConfigContent = globalThis.JSON.stringify({ agents: { researcher: { model: "google/antigravity-gemini-3-pro-high" } } }, null, 2)
+    const testConfigContent = globalThis.JSON.stringify({ omo_agent: { disabled: false } }, null, 2)
     const rawConfig: Record<string, unknown> = {
-      agents: {
-        researcher: { model: "google/antigravity-gemini-3-pro-high" },
-      },
+      omo_agent: { disabled: false },
     }
 
     fs.writeFileSync(testConfigPath, testConfigContent)
     cleanupPaths.push(testConfigPath)
 
-    // #when: Migrate config file
     const needsWrite = migrateConfigFile(testConfigPath, rawConfig)
 
-    // #then: Backup file should be created with timestamp
     expect(needsWrite).toBe(true)
 
     const dir = path.dirname(testConfigPath)
@@ -487,9 +284,8 @@ describe("migrateConfigFile with backup", () => {
     expect(backupContent).toBe(testConfigContent)
   })
 
-  test("deletes agent config when all fields match category defaults", () => {
-    // #given: Config with agent matching category defaults
-    const testConfigPath = "/tmp/test-config-delete.json"
+  test("preserves agent config when migration happens", () => {
+    const testConfigPath = "/tmp/test-config-preserve.json"
     const rawConfig: Record<string, unknown> = {
       agents: {
         researcher: {
@@ -501,17 +297,15 @@ describe("migrateConfigFile with backup", () => {
     fs.writeFileSync(testConfigPath, globalThis.JSON.stringify(rawConfig, null, 2))
     cleanupPaths.push(testConfigPath)
 
-    // #when: Migrate config file
     const needsWrite = migrateConfigFile(testConfigPath, rawConfig)
 
-    // #then: Agent config should be deleted (matches defaults after migration)
-    expect(needsWrite).toBe(true)
+    expect(needsWrite).toBe(false)
     const agents = rawConfig.agents as Record<string, unknown>
-    expect(agents["researcher"]).toBeUndefined()
+    expect(agents["researcher"]).toBeDefined()
+    expect(agents["researcher"]).toEqual({ model: "google/antigravity-gemini-3-pro-high" })
   })
 
   test("handles multiple agent migrations correctly", () => {
-    // #given: Config with multiple agents
     const testConfigPath = "/tmp/test-config-multi.json"
     const rawConfig: Record<string, unknown> = {
       agents: {
@@ -524,13 +318,11 @@ describe("migrateConfigFile with backup", () => {
     fs.writeFileSync(testConfigPath, globalThis.JSON.stringify(rawConfig, null, 2))
     cleanupPaths.push(testConfigPath)
 
-    // #when: Migrate config file
     const needsWrite = migrateConfigFile(testConfigPath, rawConfig)
 
-    // #then: Check migrations
-    expect(needsWrite).toBe(true)
+    expect(needsWrite).toBe(false)
     const agents = rawConfig.agents as Record<string, unknown>
-    expect(agents["researcher"]).toBeUndefined()
+    expect(agents["researcher"]).toEqual({ model: "google/antigravity-gemini-3-pro-high" })
     expect(agents["writer"]).toEqual({ temperature: 0.9 })
     expect(agents["custom"]).toEqual({ model: "custom/model" })
   })
