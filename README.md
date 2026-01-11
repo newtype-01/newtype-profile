@@ -1,3 +1,7 @@
+<p align="right">
+  <strong>English</strong> | <a href="./README.zh-cn.md">简体中文</a>
+</p>
+
 # newtype-profile
 
 **AI Agent Collaboration System for Content Creation**

@@ -1,3 +1,7 @@
+<p align="right">
+  <a href="./README.md">English</a> | <strong>简体中文</strong>
+</p>
+
 # newtype-profile
 
 **专为内容创作设计的 AI Agent 协作系统**
