@@ -2,8 +2,8 @@
 .sisyphus/
 node_modules/
 
-# Build output (dist/ is included for GitHub plugin deployment)
-# dist/
+# Build output
+dist/
 
 # IDE
 .idea/
