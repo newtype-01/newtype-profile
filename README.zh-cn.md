@@ -50,9 +50,20 @@ newtype-profile 是一套专为**内容创作**设计的 AI Agent 协作框架�
 
 ### 部署方式
 
-#### 方式一：npm 包（推荐）
+OpenCode 支持**用户级**和**项目级**两种配置方式。这样你可以为不同的项目使用不同的插件 - 例如代码项目使用 oh-my-opencode，内容创作项目使用 newtype-profile。
 
-最简单的方式 - 通过 npm 包名安装：
+#### 配置层级
+
+| 层级 | 路径 | 优先级 |
+|------|------|--------|
+| **用户级** | `~/.config/opencode/opencode.json` | 低 |
+| **项目级** | `<project>/.opencode/opencode.json` | 高（覆盖用户级） |
+
+---
+
+#### 方式一：用户级配置（全局）
+
+如果你希望所有项目默认使用 newtype-profile，采用此方式。
 
 编辑 `~/.config/opencode/opencode.json`：
 
@@ -64,7 +75,50 @@ newtype-profile 是一套专为**内容创作**设计的 AI Agent 协作框架�
 }
 ```
 
-#### 方式二：克隆到本地
+---
+
+#### 方式二：项目级配置（推荐）
+
+仅为特定的内容创作项目启用 newtype-profile，代码项目仍使用 oh-my-opencode。
+
+**步骤 1**：用户级保持 oh-my-opencode 作为默认
+
+`~/.config/opencode/opencode.json`：
+```json
+{
+  "plugin": [
+    "oh-my-opencode"
+  ]
+}
+```
+
+**步骤 2**：在内容创作项目中启用 newtype-profile
+
+在内容创作项目根目录创建 `.opencode/opencode.json`：
+
+```bash
+mkdir -p .opencode
+```
+
+`<project>/.opencode/opencode.json`：
+```json
+{
+  "plugin": [
+    "newtype-profile"
+  ]
+}
+```
+
+**效果**：
+
+| 项目类型 | 配置来源 | 使用的插件 |
+|----------|----------|------------|
+| 代码项目（无 `.opencode/`） | 用户级配置 | oh-my-opencode |
+| 内容创作项目（有 `.opencode/`） | 项目级配置 | newtype-profile |
+
+---
+
+#### 方式三：克隆到本地（开发用）
 
 用于开发或自定义：
 
@@ -75,7 +129,7 @@ bun install
 bun run build
 ```
 
-编辑 `~/.config/opencode/opencode.json`：
+然后在配置中引用本地路径：
 
 ```json
 {
@@ -87,7 +141,11 @@ bun run build
 
 ### 配置 Agent 模型
 
-创建或编辑 `~/.config/opencode/oh-my-opencode.json`：
+创建或编辑 oh-my-opencode 配置文件。
+
+**用户级**：`~/.config/opencode/oh-my-opencode.json`
+
+**项目级**：`<project>/.opencode/oh-my-opencode.json`
 
 ```json
 {

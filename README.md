@@ -50,9 +50,20 @@ newtype-profile is an AI Agent collaboration framework designed for **content cr
 
 ### Installation Methods
 
-#### Method 1: npm Package (Recommended)
+OpenCode supports both **user-level** and **project-level** configuration. This allows you to use different plugins for different projects - for example, oh-my-opencode for coding projects and newtype-profile for content creation projects.
 
-The simplest way - install via npm package name:
+#### Configuration Hierarchy
+
+| Level | Path | Priority |
+|-------|------|----------|
+| **User-level** | `~/.config/opencode/opencode.json` | Lower |
+| **Project-level** | `<project>/.opencode/opencode.json` | Higher (overrides user-level) |
+
+---
+
+#### Method 1: User-Level Configuration (Global)
+
+Use this if you want newtype-profile as your default plugin for all projects.
 
 Edit `~/.config/opencode/opencode.json`:
 
@@ -64,7 +75,50 @@ Edit `~/.config/opencode/opencode.json`:
 }
 ```
 
-#### Method 2: Clone to Local
+---
+
+#### Method 2: Project-Level Configuration (Recommended)
+
+Use this to enable newtype-profile only for specific content creation projects, while keeping oh-my-opencode as the default for coding projects.
+
+**Step 1**: Keep oh-my-opencode as user-level default
+
+`~/.config/opencode/opencode.json`:
+```json
+{
+  "plugin": [
+    "oh-my-opencode"
+  ]
+}
+```
+
+**Step 2**: Enable newtype-profile for content creation projects
+
+In your content creation project root, create `.opencode/opencode.json`:
+
+```bash
+mkdir -p .opencode
+```
+
+`<project>/.opencode/opencode.json`:
+```json
+{
+  "plugin": [
+    "newtype-profile"
+  ]
+}
+```
+
+**Result**:
+
+| Project Type | Config Source | Plugin Used |
+|--------------|---------------|-------------|
+| Coding projects (no `.opencode/`) | User-level config | oh-my-opencode |
+| Content creation projects (has `.opencode/`) | Project-level config | newtype-profile |
+
+---
+
+#### Method 3: Clone to Local (Development)
 
 For development or customization:
 
@@ -75,7 +129,7 @@ bun install
 bun run build
 ```
 
-Edit `~/.config/opencode/opencode.json`:
+Then reference the local path in your config:
 
 ```json
 {
@@ -87,7 +141,11 @@ Edit `~/.config/opencode/opencode.json`:
 
 ### Configure Agent Models
 
-Create or edit `~/.config/opencode/oh-my-opencode.json`:
+Create or edit the oh-my-opencode config file.
+
+**User-level**: `~/.config/opencode/oh-my-opencode.json`
+
+**Project-level**: `<project>/.opencode/oh-my-opencode.json`
 
 ```json
 {
