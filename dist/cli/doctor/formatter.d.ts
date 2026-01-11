@@ -1,0 +1,12 @@
+import type { CheckResult, DoctorSummary, CheckCategory, DoctorResult } from "./types";
+export declare function formatStatusSymbol(status: CheckResult["status"]): string;
+export declare function formatCheckResult(result: CheckResult, verbose: boolean): string;
+export declare function formatCategoryHeader(category: CheckCategory): string;
+export declare function formatSummary(summary: DoctorSummary): string;
+export declare function formatHeader(): string;
+export declare function formatFooter(summary: DoctorSummary): string;
+export declare function formatProgress(current: number, total: number, name: string): string;
+export declare function formatJsonOutput(result: DoctorResult): string;
+export declare function formatDetails(details: string[]): string;
+export declare function formatBox(content: string, title?: string): string;
+export declare function formatHelpSuggestions(results: CheckResult[]): string[];

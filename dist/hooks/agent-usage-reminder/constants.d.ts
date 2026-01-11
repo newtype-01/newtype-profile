@@ -1,0 +1,5 @@
+export declare const OPENCODE_STORAGE: string;
+export declare const AGENT_USAGE_REMINDER_STORAGE: string;
+export declare const TARGET_TOOLS: Set<string>;
+export declare const AGENT_TOOLS: Set<string>;
+export declare const REMINDER_MESSAGE = "\n[Agent Usage Reminder]\n\nYou called a search/fetch tool directly without leveraging specialized agents.\n\nRECOMMENDED: Use chief_task with researcher/archivist agents for better results:\n\n```\n// Parallel exploration - fire multiple agents simultaneously\nchief_task(agent=\"researcher\", prompt=\"Find information about topic X\")\nchief_task(agent=\"researcher\", prompt=\"Search for sources about Y\") \nchief_task(agent=\"archivist\", prompt=\"Find related documents in knowledge base\")\n\n// Then continue your work while they run in background\n// System will notify you when each completes\n```\n\nWHY:\n- Agents can perform deeper, more thorough searches\n- Background tasks run in parallel, saving time\n- Specialized agents have domain expertise\n- Reduces context window usage in main session\n\nALWAYS prefer: Multiple parallel chief_task calls > Direct tool calls\n";

@@ -1,0 +1,12 @@
+import { type ToolDefinition } from "@opencode-ai/plugin/tool";
+export declare const lsp_hover: ToolDefinition;
+export declare const lsp_goto_definition: ToolDefinition;
+export declare const lsp_find_references: ToolDefinition;
+export declare const lsp_document_symbols: ToolDefinition;
+export declare const lsp_workspace_symbols: ToolDefinition;
+export declare const lsp_diagnostics: ToolDefinition;
+export declare const lsp_servers: ToolDefinition;
+export declare const lsp_prepare_rename: ToolDefinition;
+export declare const lsp_rename: ToolDefinition;
+export declare const lsp_code_actions: ToolDefinition;
+export declare const lsp_code_action_resolve: ToolDefinition;

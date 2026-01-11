@@ -1,0 +1,10 @@
+export declare const PERMISSION_BREAKING_VERSION = "1.1.1";
+export declare function parseVersion(version: string): number[];
+export declare function compareVersions(a: string, b: string): -1 | 0 | 1;
+export declare function isVersionGte(a: string, b: string): boolean;
+export declare function isVersionLt(a: string, b: string): boolean;
+export declare function getOpenCodeVersion(): string | null;
+export declare function supportsNewPermissionSystem(): boolean;
+export declare function usesLegacyToolsSystem(): boolean;
+export declare function resetVersionCache(): void;
+export declare function setVersionCache(version: string | null): void;
