@@ -204,6 +204,47 @@ Override default settings in your config file:
 }
 ```
 
+### MCP Server Configuration
+
+The plugin includes built-in MCP (Model Context Protocol) servers. Configure them in your `oh-my-opencode.json`:
+
+```json
+{
+  "mcp": {
+    "tavily": {
+      "api_key": "tvly-your-api-key"
+    },
+    "firecrawl": {
+      "api_key": "fc-your-api-key"
+    },
+    "filesystem": {
+      "directories": ["~/Documents", "~/Projects"]
+    },
+    "sequential-thinking": true
+  }
+}
+```
+
+| MCP Server | Default | Required Config | Description |
+|------------|---------|-----------------|-------------|
+| **websearch** (Exa) | Enabled | None | Web search via Exa.ai |
+| **sequential-thinking** | Enabled | None | Structured problem-solving |
+| **tavily** | Disabled | `api_key` | Advanced web search, crawl, extract |
+| **firecrawl** | Disabled | `api_key` | Web scraping and content extraction |
+| **filesystem** | Disabled | `directories` | Local file system access |
+
+Get API keys:
+- Tavily: [tavily.com](https://tavily.com)
+- Firecrawl: [firecrawl.dev](https://firecrawl.dev)
+
+To disable a built-in MCP:
+
+```json
+{
+  "disabled_mcps": ["sequential-thinking"]
+}
+```
+
 ## Features Inherited from oh-my-opencode
 
 This project retains core capabilities from oh-my-opencode:

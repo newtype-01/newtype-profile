@@ -1634,6 +1634,57 @@
           "type": "boolean"
         }
       }
+    },
+    "mcp": {
+      "type": "object",
+      "properties": {
+        "tavily": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "api_key"
+          ]
+        },
+        "firecrawl": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string",
+              "minLength": 1
+            },
+            "api_url": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "required": [
+            "api_key"
+          ]
+        },
+        "filesystem": {
+          "type": "object",
+          "properties": {
+            "directories": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "directories"
+          ]
+        },
+        "sequential-thinking": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }

@@ -1,5 +1,9 @@
 import { z } from "zod"
-import { AnyMcpNameSchema, McpNameSchema } from "../mcp/types"
+import {
+  AnyMcpNameSchema,
+  McpNameSchema,
+  McpConfigSchema,
+} from "../mcp/types"
 
 const PermissionValue = z.enum(["ask", "allow", "deny"])
 
@@ -300,6 +304,7 @@ export const OhMyOpenCodeConfigSchema = z.object({
   background_task: BackgroundTaskConfigSchema.optional(),
   notification: NotificationConfigSchema.optional(),
   git_master: GitMasterConfigSchema.optional(),
+  mcp: McpConfigSchema.optional(),
 })
 
 export type OhMyOpenCodeConfig = z.infer<typeof OhMyOpenCodeConfigSchema>
@@ -322,5 +327,15 @@ export type CategoryConfig = z.infer<typeof CategoryConfigSchema>
 export type CategoriesConfig = z.infer<typeof CategoriesConfigSchema>
 export type BuiltinCategoryName = z.infer<typeof BuiltinCategoryNameSchema>
 export type GitMasterConfig = z.infer<typeof GitMasterConfigSchema>
+export type McpConfig = z.infer<typeof McpConfigSchema>
 
-export { AnyMcpNameSchema, type AnyMcpName, McpNameSchema, type McpName } from "../mcp/types"
+export {
+  AnyMcpNameSchema,
+  type AnyMcpName,
+  McpNameSchema,
+  type McpName,
+  McpConfigSchema,
+  type McpTavilyConfig,
+  type McpFirecrawlConfig,
+  type McpFilesystemConfig,
+} from "../mcp/types"

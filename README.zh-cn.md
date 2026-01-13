@@ -204,6 +204,47 @@ opencode
 }
 ```
 
+### MCP 服务器配置
+
+插件内置了多个 MCP (Model Context Protocol) 服务器。在 `oh-my-opencode.json` 中配置：
+
+```json
+{
+  "mcp": {
+    "tavily": {
+      "api_key": "tvly-your-api-key"
+    },
+    "firecrawl": {
+      "api_key": "fc-your-api-key"
+    },
+    "filesystem": {
+      "directories": ["~/Documents", "~/Projects"]
+    },
+    "sequential-thinking": true
+  }
+}
+```
+
+| MCP 服务器 | 默认状态 | 需要配置 | 说明 |
+|------------|----------|----------|------|
+| **websearch** (Exa) | 已启用 | 无 | 通过 Exa.ai 进行网页搜索 |
+| **sequential-thinking** | 已启用 | 无 | 结构化问题解决 |
+| **tavily** | 未启用 | `api_key` | 高级网页搜索、爬取、提取 |
+| **firecrawl** | 未启用 | `api_key` | 网页抓取和内容提取 |
+| **filesystem** | 未启用 | `directories` | 本地文件系统访问 |
+
+获取 API Key：
+- Tavily: [tavily.com](https://tavily.com)
+- Firecrawl: [firecrawl.dev](https://firecrawl.dev)
+
+禁用内置 MCP：
+
+```json
+{
+  "disabled_mcps": ["sequential-thinking"]
+}
+```
+
 ## 继承自 oh-my-opencode 的功能
 
 本项目保留了 oh-my-opencode 的核心能力：
