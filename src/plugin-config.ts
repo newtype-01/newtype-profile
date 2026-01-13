@@ -36,7 +36,11 @@ export function loadConfigFromPath(
         return null;
       }
 
-      log(`Config loaded from ${configPath}`, { agents: result.data.agents });
+      log(`Config loaded from ${configPath}`, { 
+        agents: result.data.agents,
+        mcp: result.data.mcp,
+        google_auth: result.data.google_auth,
+      });
       return result.data;
     }
   } catch (err) {
@@ -86,6 +90,7 @@ export function mergeConfigs(
       ]),
     ],
     claude_code: deepMerge(base.claude_code, override.claude_code),
+    mcp: deepMerge(base.mcp, override.mcp),
   };
 }
 
@@ -129,6 +134,7 @@ export function loadPluginConfig(
     disabled_mcps: config.disabled_mcps,
     disabled_hooks: config.disabled_hooks,
     claude_code: config.claude_code,
+    mcp: config.mcp,
   });
   return config;
 }
