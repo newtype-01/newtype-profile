@@ -2,7 +2,7 @@ import { websearch } from "./websearch"
 import { createTavilyMcp, type StdioMcpConfig } from "./tavily"
 import { createFirecrawlMcp } from "./firecrawl"
 import { createFilesystemMcp } from "./filesystem"
-import { createSequentialThinkingMcp } from "./sequential-thinking"
+import { createSequentialThinkingMcp, type LocalMcpConfig } from "./sequential-thinking"
 import type { McpConfig } from "./types"
 import { log } from "../shared"
 
@@ -16,7 +16,7 @@ type RemoteMcpConfig = {
   headers?: Record<string, string>
 }
 
-type AnyMcpConfig = RemoteMcpConfig | StdioMcpConfig
+type AnyMcpConfig = RemoteMcpConfig | StdioMcpConfig | LocalMcpConfig
 
 const alwaysEnabledMcps: Record<string, RemoteMcpConfig> = {
   websearch,

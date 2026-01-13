@@ -1,10 +1,12 @@
-import type { StdioMcpConfig } from "./tavily"
+export type LocalMcpConfig = {
+  command: string
+  args: string[]
+  env?: Record<string, string>
+}
 
-export function createSequentialThinkingMcp(): StdioMcpConfig {
+export function createSequentialThinkingMcp(): LocalMcpConfig {
   return {
-    type: "stdio",
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-sequential-thinking"],
-    enabled: true,
   }
 }
