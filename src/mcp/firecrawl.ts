@@ -1,20 +1,19 @@
 import type { McpFirecrawlConfig } from "./types"
-import type { StdioMcpConfig } from "./tavily"
+import type { McpLocalConfig } from "./types-local"
 
-export function createFirecrawlMcp(config: McpFirecrawlConfig): StdioMcpConfig {
-  const env: Record<string, string> = {
+export function createFirecrawlMcp(config: McpFirecrawlConfig): McpLocalConfig {
+  const environment: Record<string, string> = {
     FIRECRAWL_API_KEY: config.api_key,
   }
   
   if (config.api_url) {
-    env.FIRECRAWL_API_URL = config.api_url
+    environment.FIRECRAWL_API_URL = config.api_url
   }
 
   return {
-    type: "stdio",
-    command: "npx",
-    args: ["-y", "firecrawl-mcp"],
-    env,
+    type: "local",
+    command: ["npx", "-y", "firecrawl-mcp"],
+    environment,
     enabled: true,
   }
 }

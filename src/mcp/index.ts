@@ -1,24 +1,18 @@
 import { websearch } from "./websearch"
-import { createTavilyMcp, type StdioMcpConfig } from "./tavily"
+import { createTavilyMcp } from "./tavily"
 import { createFirecrawlMcp } from "./firecrawl"
 import { createFilesystemMcp } from "./filesystem"
-import { createSequentialThinkingMcp, type LocalMcpConfig } from "./sequential-thinking"
+import { createSequentialThinkingMcp } from "./sequential-thinking"
+import type { McpLocalConfig, McpRemoteConfig } from "./types-local"
 import type { McpConfig } from "./types"
 import { log } from "../shared"
 
 export { McpNameSchema, type McpName, McpConfigSchema, type McpConfig } from "./types"
-export type { StdioMcpConfig } from "./tavily"
+export { type McpLocalConfig, type McpRemoteConfig } from "./types-local"
 
-type RemoteMcpConfig = {
-  type: "remote"
-  url: string
-  enabled: boolean
-  headers?: Record<string, string>
-}
+type AnyMcpConfig = McpRemoteConfig | McpLocalConfig
 
-type AnyMcpConfig = RemoteMcpConfig | StdioMcpConfig | LocalMcpConfig
-
-const alwaysEnabledMcps: Record<string, RemoteMcpConfig> = {
+const alwaysEnabledMcps: Record<string, McpRemoteConfig> = {
   websearch,
 }
 

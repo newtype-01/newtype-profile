@@ -1,5 +1,5 @@
 import type { McpFilesystemConfig } from "./types"
-import type { StdioMcpConfig } from "./tavily"
+import type { McpLocalConfig } from "./types-local"
 import * as path from "path"
 import * as os from "os"
 
@@ -10,13 +10,12 @@ function expandPath(p: string): string {
   return p
 }
 
-export function createFilesystemMcp(config: McpFilesystemConfig): StdioMcpConfig {
+export function createFilesystemMcp(config: McpFilesystemConfig): McpLocalConfig {
   const expandedDirs = config.directories.map(expandPath)
 
   return {
-    type: "stdio",
-    command: "npx",
-    args: ["-y", "@modelcontextprotocol/server-filesystem", ...expandedDirs],
+    type: "local",
+    command: ["npx", "-y", "@modelcontextprotocol/server-filesystem", ...expandedDirs],
     enabled: true,
   }
 }

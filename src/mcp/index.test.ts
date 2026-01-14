@@ -86,8 +86,8 @@ describe("createBuiltinMcps", () => {
     //#then
     expect(result).toHaveProperty("tavily")
     expect(result.tavily).toMatchObject({
-      type: "stdio",
-      command: "npx",
+      type: "local",
+      command: ["npx", "-y", "tavily-mcp@latest"],
       enabled: true,
     })
   })
@@ -104,8 +104,8 @@ describe("createBuiltinMcps", () => {
     //#then
     expect(result).toHaveProperty("firecrawl")
     expect(result.firecrawl).toMatchObject({
-      type: "stdio",
-      command: "npx",
+      type: "local",
+      command: ["npx", "-y", "firecrawl-mcp"],
       enabled: true,
     })
   })
@@ -122,8 +122,8 @@ describe("createBuiltinMcps", () => {
     //#then
     expect(result).toHaveProperty("filesystem")
     expect(result.filesystem).toMatchObject({
-      type: "stdio",
-      command: "npx",
+      type: "local",
+      command: ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/tmp", "/home"],
       enabled: true,
     })
   })

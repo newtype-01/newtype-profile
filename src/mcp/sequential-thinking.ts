@@ -1,12 +1,9 @@
-export type LocalMcpConfig = {
-  command: string
-  args: string[]
-  env?: Record<string, string>
-}
+import type { McpLocalConfig } from "./types-local"
 
-export function createSequentialThinkingMcp(): LocalMcpConfig {
+export function createSequentialThinkingMcp(): McpLocalConfig {
   return {
-    command: "npx",
-    args: ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+    type: "local",
+    command: ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+    enabled: true,
   }
 }

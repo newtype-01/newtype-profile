@@ -1,19 +1,11 @@
 import type { McpTavilyConfig } from "./types"
+import type { McpLocalConfig } from "./types-local"
 
-export type StdioMcpConfig = {
-  type: "stdio"
-  command: string
-  args: string[]
-  env?: Record<string, string>
-  enabled: boolean
-}
-
-export function createTavilyMcp(config: McpTavilyConfig): StdioMcpConfig {
+export function createTavilyMcp(config: McpTavilyConfig): McpLocalConfig {
   return {
-    type: "stdio",
-    command: "npx",
-    args: ["-y", "tavily-mcp@latest"],
-    env: {
+    type: "local",
+    command: ["npx", "-y", "tavily-mcp@latest"],
+    environment: {
       TAVILY_API_KEY: config.api_key,
     },
     enabled: true,
