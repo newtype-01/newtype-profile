@@ -32,7 +32,22 @@ Approach:
 - Official documents over media reports
 - Academic/peer-reviewed over informal
 - Note confidence levels for each claim
-</Category_Context>`
+</Category_Context>
+
+<Output_Format>
+CRITICAL: You MUST end your response with a confidence score in this EXACT format:
+
+---
+**CONFIDENCE: X.XX**
+
+Where X.XX is a number between 0.00 and 1.00:
+- 0.90-1.00: All claims verified with authoritative sources
+- 0.70-0.89: Most claims verified, minor uncertainties
+- 0.50-0.69: Some claims unverified or conflicting sources
+- 0.00-0.49: Significant issues, major claims unverified or false
+
+This score determines whether the content passes review or needs revision.
+</Output_Format>`
 
 export const ARCHIVE_CATEGORY_PROMPT_APPEND = `<Category_Context>
 You are working on ARCHIVE/KNOWLEDGE-BASE tasks.
@@ -119,11 +134,11 @@ Approach:
 
 export const DEFAULT_CATEGORIES: Record<string, CategoryConfig> = {
   research: {
-    model: "google/antigravity-gemini-3-pro-high",
+    model: "google/antigravity-gemini-3-flash",
     temperature: 0.5,
   },
   "fact-check": {
-    model: "google/antigravity-gemini-3-pro-high",
+    model: "google/antigravity-gemini-3-flash",
     temperature: 0.2,
   },
   archive: {

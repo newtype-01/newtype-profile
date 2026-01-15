@@ -13,6 +13,7 @@ import { log } from "../../shared/logger"
 import type { BackgroundManager } from "../../features/background-agent"
 import { summarizeOutput, formatSummarizedOutput } from "./output-summarizer"
 import { getTrackerForSession, clearTrackerForSession } from "./task-progress-tracker"
+import { analyzeFactCheckOutput, isFactCheckOutput } from "./confidence-router"
 
 export const HOOK_NAME = "chief-orchestrator"
 
@@ -701,11 +702,24 @@ ${buildOrchestratorReminder(boulderState.plan_name, progress, subagentSessionId)
           const summarized = summarizeOutput(output.output, { category })
           const formattedSummary = formatSummarizedOutput(summarized)
 
+          let confidenceDirective = ""
+          if (isFactCheckOutput(output.output)) {
+            const confidenceResult = analyzeFactCheckOutput(output.output, subagentSessionId)
+            if (confidenceResult.directive) {
+              confidenceDirective = `\n\n---\n${confidenceResult.directive}\n---`
+              log(`[${HOOK_NAME}] Confidence routing detected`, {
+                sessionID: input.sessionID,
+                confidence: confidenceResult.confidence,
+                recommendation: confidenceResult.recommendation,
+              })
+            }
+          }
+
           output.output = `${formattedSummary}
 
 ${progressTable}
 
-${fileChanges ? `\n${fileChanges}` : ""}
+${fileChanges ? `\n${fileChanges}` : ""}${confidenceDirective}
 <system-reminder>
 ${buildStandaloneVerificationReminder(subagentSessionId)}
 </system-reminder>`
