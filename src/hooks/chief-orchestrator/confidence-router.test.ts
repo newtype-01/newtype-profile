@@ -1,10 +1,14 @@
-import { describe, test, expect } from "bun:test"
+import { describe, test, expect, beforeEach } from "bun:test"
 import {
   extractConfidence,
   getRecommendation,
   buildConfidenceDirective,
   analyzeFactCheckOutput,
   isFactCheckOutput,
+  getRewriteAttempts,
+  incrementRewriteAttempts,
+  clearRewriteAttempts,
+  buildEscalateDirective,
 } from "./confidence-router"
 
 describe("extractConfidence", () => {
@@ -134,7 +138,6 @@ describe("buildConfidenceDirective", () => {
     expect(result).toContain("30%")
     expect(result).toContain("LOW")
     expect(result).toContain('category="writing"')
-    expect(result).toContain("Max 2 rewrite attempts")
   })
 })
 
@@ -183,5 +186,117 @@ describe("isFactCheckOutput", () => {
 
   test("should return false for unrelated output", () => {
     expect(isFactCheckOutput("Just a regular message")).toBe(false)
+  })
+})
+
+describe("rewrite attempt tracking", () => {
+  beforeEach(() => {
+    // #given - clean state for each test
+    clearRewriteAttempts("test-session")
+    clearRewriteAttempts("other-session")
+  })
+
+  test("should start at 0 attempts", () => {
+    // #when
+    const attempts = getRewriteAttempts("test-session")
+    // #then
+    expect(attempts).toBe(0)
+  })
+
+  test("should increment attempts", () => {
+    // #when
+    const first = incrementRewriteAttempts("test-session")
+    const second = incrementRewriteAttempts("test-session")
+    // #then
+    expect(first).toBe(1)
+    expect(second).toBe(2)
+  })
+
+  test("should track sessions independently", () => {
+    // #when
+    incrementRewriteAttempts("test-session")
+    incrementRewriteAttempts("test-session")
+    incrementRewriteAttempts("other-session")
+    // #then
+    expect(getRewriteAttempts("test-session")).toBe(2)
+    expect(getRewriteAttempts("other-session")).toBe(1)
+  })
+
+  test("should clear attempts for a session", () => {
+    // #given
+    incrementRewriteAttempts("test-session")
+    incrementRewriteAttempts("test-session")
+    // #when
+    clearRewriteAttempts("test-session")
+    // #then
+    expect(getRewriteAttempts("test-session")).toBe(0)
+  })
+})
+
+describe("buildEscalateDirective", () => {
+  test("should include escalation message", () => {
+    // #given
+    const confidence = 0.3
+    const attempts = 3
+    // #when
+    const result = buildEscalateDirective(confidence, attempts)
+    // #then
+    expect(result).toContain("[FACT-CHECK: ESCALATE TO USER]")
+    expect(result).toContain("30%")
+    expect(result).toContain("3/2")
+    expect(result).toContain("LIMIT REACHED")
+    expect(result).toContain("AUTOMATIC REWRITING HAS FAILED")
+  })
+})
+
+describe("analyzeFactCheckOutput with rewrite limits", () => {
+  beforeEach(() => {
+    // #given - clean state
+    clearRewriteAttempts("ses-limit-test")
+  })
+
+  test("should return rewrite on first low confidence", () => {
+    // #given
+    const output = "**CONFIDENCE: 0.3**"
+    // #when
+    const result = analyzeFactCheckOutput(output, "ses-limit-test")
+    // #then
+    expect(result.recommendation).toBe("rewrite")
+    expect(result.directive).toContain("Rewrite attempt: 1/2")
+  })
+
+  test("should return rewrite on second low confidence", () => {
+    // #given
+    const output = "**CONFIDENCE: 0.3**"
+    analyzeFactCheckOutput(output, "ses-limit-test")
+    // #when
+    const result = analyzeFactCheckOutput(output, "ses-limit-test")
+    // #then
+    expect(result.recommendation).toBe("rewrite")
+    expect(result.directive).toContain("Rewrite attempt: 2/2")
+  })
+
+  test("should escalate on third low confidence", () => {
+    // #given
+    const output = "**CONFIDENCE: 0.3**"
+    analyzeFactCheckOutput(output, "ses-limit-test")
+    analyzeFactCheckOutput(output, "ses-limit-test")
+    // #when
+    const result = analyzeFactCheckOutput(output, "ses-limit-test")
+    // #then
+    expect(result.recommendation).toBe("escalate")
+    expect(result.directive).toContain("[FACT-CHECK: ESCALATE TO USER]")
+    expect(result.directive).toContain("3/2")
+  })
+
+  test("should not increment counter for pass/polish", () => {
+    // #given
+    const passOutput = "**CONFIDENCE: 0.9**"
+    const polishOutput = "**CONFIDENCE: 0.6**"
+    // #when
+    analyzeFactCheckOutput(passOutput, "ses-limit-test")
+    analyzeFactCheckOutput(polishOutput, "ses-limit-test")
+    // #then
+    expect(getRewriteAttempts("ses-limit-test")).toBe(0)
   })
 })

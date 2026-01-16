@@ -13,7 +13,7 @@ import { log } from "../../shared/logger"
 import type { BackgroundManager } from "../../features/background-agent"
 import { summarizeOutput, formatSummarizedOutput } from "./output-summarizer"
 import { getTrackerForSession, clearTrackerForSession } from "./task-progress-tracker"
-import { analyzeFactCheckOutput, isFactCheckOutput } from "./confidence-router"
+import { analyzeFactCheckOutput, isFactCheckOutput, clearRewriteAttempts } from "./confidence-router"
 
 export const HOOK_NAME = "chief-orchestrator"
 
@@ -536,6 +536,7 @@ export function createChiefOrchestratorHook(
         if (sessionInfo?.id) {
           sessions.delete(sessionInfo.id)
           clearTrackerForSession(sessionInfo.id)
+          clearRewriteAttempts(sessionInfo.id)
           log(`[${HOOK_NAME}] Session deleted: cleaned up`, { sessionID: sessionInfo.id })
         }
         return

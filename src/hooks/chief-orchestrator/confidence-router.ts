@@ -5,9 +5,17 @@
  * routing recommendations for the orchestrator.
  */
 
+/** Maximum rewrite attempts before escalating to user */
+const MAX_REWRITE_ATTEMPTS = 2
+
+/** Session-level rewrite attempt counter */
+const rewriteAttempts = new Map<string, number>()
+
+export type Recommendation = "pass" | "polish" | "rewrite" | "escalate"
+
 export interface ConfidenceResult {
   confidence: number | null
-  recommendation: "pass" | "polish" | "rewrite" | null
+  recommendation: Recommendation | null
   directive: string | null
 }
 
@@ -41,6 +49,30 @@ export function getRecommendation(confidence: number): "pass" | "polish" | "rewr
 }
 
 /**
+ * Get current rewrite attempt count for a session
+ */
+export function getRewriteAttempts(sessionId: string): number {
+  return rewriteAttempts.get(sessionId) ?? 0
+}
+
+/**
+ * Increment and return the new rewrite attempt count
+ */
+export function incrementRewriteAttempts(sessionId: string): number {
+  const current = getRewriteAttempts(sessionId)
+  const next = current + 1
+  rewriteAttempts.set(sessionId, next)
+  return next
+}
+
+/**
+ * Clear rewrite attempts for a session (call on session cleanup)
+ */
+export function clearRewriteAttempts(sessionId: string): void {
+  rewriteAttempts.delete(sessionId)
+}
+
+/**
  * Build routing directive for Chief based on confidence
  */
 export function buildConfidenceDirective(confidence: number, sessionId: string): string {
@@ -71,14 +103,39 @@ Action: Significant issues found. Send back to Writer.
 REQUIRED: Call chief_task with:
   category="writing"  
   prompt="Rewrite the content addressing the fact-check issues. Focus on: [list specific issues from fact-check report]"
-  resume="${sessionId}"
-
-NOTE: Max 2 rewrite attempts. If still failing after 2 rewrites, escalate to user.`
+  resume="${sessionId}"`
   }
 }
 
 /**
+ * Build escalate directive when max rewrite attempts exceeded
+ */
+export function buildEscalateDirective(confidence: number, attempts: number): string {
+  const confidencePercent = Math.round(confidence * 100)
+  return `[FACT-CHECK: ESCALATE TO USER]
+Confidence: ${confidencePercent}% (LOW)
+Rewrite attempts: ${attempts}/${MAX_REWRITE_ATTEMPTS} (LIMIT REACHED)
+
+⚠️ AUTOMATIC REWRITING HAS FAILED.
+
+The content has been rewritten ${attempts} times but still fails fact-check.
+This requires human judgment.
+
+ACTION REQUIRED:
+1. Present the fact-check issues to the user
+2. Ask for guidance on how to proceed
+3. Do NOT attempt another automatic rewrite
+
+Possible user decisions:
+- Provide additional sources or context
+- Accept lower confidence for this content
+- Manually revise the problematic claims
+- Abandon this content direction`
+}
+
+/**
  * Analyze fact-check output and generate routing result
+ * Tracks rewrite attempts and escalates after MAX_REWRITE_ATTEMPTS
  */
 export function analyzeFactCheckOutput(output: string, sessionId: string): ConfidenceResult {
   const confidence = extractConfidence(output)
@@ -91,12 +148,34 @@ export function analyzeFactCheckOutput(output: string, sessionId: string): Confi
     }
   }
 
-  const recommendation = getRecommendation(confidence)
+  const baseRecommendation = getRecommendation(confidence)
+  
+  if (baseRecommendation === "rewrite") {
+    const attempts = incrementRewriteAttempts(sessionId)
+    
+    if (attempts > MAX_REWRITE_ATTEMPTS) {
+      return {
+        confidence,
+        recommendation: "escalate",
+        directive: buildEscalateDirective(confidence, attempts),
+      }
+    }
+    
+    const directive = buildConfidenceDirective(confidence, sessionId) +
+      `\n\nRewrite attempt: ${attempts}/${MAX_REWRITE_ATTEMPTS}`
+    
+    return {
+      confidence,
+      recommendation: "rewrite",
+      directive,
+    }
+  }
+
   const directive = buildConfidenceDirective(confidence, sessionId)
 
   return {
     confidence,
-    recommendation,
+    recommendation: baseRecommendation,
     directive,
   }
 }
