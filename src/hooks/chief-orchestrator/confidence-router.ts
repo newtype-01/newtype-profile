@@ -8,8 +8,8 @@
 /** Maximum rewrite attempts before escalating to user */
 const MAX_REWRITE_ATTEMPTS = 2
 
-/** Session-level rewrite attempt counter */
-const rewriteAttempts = new Map<string, number>()
+/** Per-agent rewrite attempt counter: session -> (agentType -> count) */
+const rewriteAttempts = new Map<string, Map<AgentType, number>>()
 
 export type AgentType = "fact-checker" | "researcher" | "writer" | "editor"
 export type Recommendation = "pass" | "polish" | "rewrite" | "escalate"
@@ -51,19 +51,24 @@ export function getRecommendation(confidence: number): "pass" | "polish" | "rewr
 }
 
 /**
- * Get current rewrite attempt count for a session
+ * Get current rewrite attempt count for a session and agent type
  */
-export function getRewriteAttempts(sessionId: string): number {
-  return rewriteAttempts.get(sessionId) ?? 0
+export function getRewriteAttempts(sessionId: string, agentType: AgentType): number {
+  return rewriteAttempts.get(sessionId)?.get(agentType) ?? 0
 }
 
 /**
- * Increment and return the new rewrite attempt count
+ * Increment and return the new rewrite attempt count for a session and agent type
  */
-export function incrementRewriteAttempts(sessionId: string): number {
-  const current = getRewriteAttempts(sessionId)
+export function incrementRewriteAttempts(sessionId: string, agentType: AgentType): number {
+  let sessionMap = rewriteAttempts.get(sessionId)
+  if (!sessionMap) {
+    sessionMap = new Map()
+    rewriteAttempts.set(sessionId, sessionMap)
+  }
+  const current = sessionMap.get(agentType) ?? 0
   const next = current + 1
-  rewriteAttempts.set(sessionId, next)
+  sessionMap.set(agentType, next)
   return next
 }
 
@@ -232,7 +237,7 @@ export function analyzeAgentOutput(output: string, sessionId: string, agentType:
   const baseRecommendation = getRecommendation(confidence)
   
   if (baseRecommendation === "rewrite") {
-    const attempts = incrementRewriteAttempts(sessionId)
+    const attempts = incrementRewriteAttempts(sessionId, agentType)
     
     if (attempts > MAX_REWRITE_ATTEMPTS) {
       return {

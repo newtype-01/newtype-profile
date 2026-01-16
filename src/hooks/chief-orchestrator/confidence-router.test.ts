@@ -199,17 +199,17 @@ describe("rewrite attempt tracking", () => {
     clearRewriteAttempts("other-session")
   })
 
-  test("should start at 0 attempts", () => {
+  test("should start at 0 attempts for any agent", () => {
     // #when
-    const attempts = getRewriteAttempts("test-session")
+    const attempts = getRewriteAttempts("test-session", "fact-checker")
     // #then
     expect(attempts).toBe(0)
   })
 
-  test("should increment attempts", () => {
+  test("should increment attempts per agent type", () => {
     // #when
-    const first = incrementRewriteAttempts("test-session")
-    const second = incrementRewriteAttempts("test-session")
+    const first = incrementRewriteAttempts("test-session", "fact-checker")
+    const second = incrementRewriteAttempts("test-session", "fact-checker")
     // #then
     expect(first).toBe(1)
     expect(second).toBe(2)
@@ -217,22 +217,36 @@ describe("rewrite attempt tracking", () => {
 
   test("should track sessions independently", () => {
     // #when
-    incrementRewriteAttempts("test-session")
-    incrementRewriteAttempts("test-session")
-    incrementRewriteAttempts("other-session")
+    incrementRewriteAttempts("test-session", "fact-checker")
+    incrementRewriteAttempts("test-session", "fact-checker")
+    incrementRewriteAttempts("other-session", "fact-checker")
     // #then
-    expect(getRewriteAttempts("test-session")).toBe(2)
-    expect(getRewriteAttempts("other-session")).toBe(1)
+    expect(getRewriteAttempts("test-session", "fact-checker")).toBe(2)
+    expect(getRewriteAttempts("other-session", "fact-checker")).toBe(1)
   })
 
-  test("should clear attempts for a session", () => {
+  test("should track agent types independently within same session", () => {
+    // #when
+    incrementRewriteAttempts("test-session", "fact-checker")
+    incrementRewriteAttempts("test-session", "fact-checker")
+    incrementRewriteAttempts("test-session", "writer")
+    // #then
+    expect(getRewriteAttempts("test-session", "fact-checker")).toBe(2)
+    expect(getRewriteAttempts("test-session", "writer")).toBe(1)
+    expect(getRewriteAttempts("test-session", "researcher")).toBe(0)
+  })
+
+  test("should clear all agent attempts for a session", () => {
     // #given
-    incrementRewriteAttempts("test-session")
-    incrementRewriteAttempts("test-session")
+    incrementRewriteAttempts("test-session", "fact-checker")
+    incrementRewriteAttempts("test-session", "writer")
+    incrementRewriteAttempts("test-session", "researcher")
     // #when
     clearRewriteAttempts("test-session")
     // #then
-    expect(getRewriteAttempts("test-session")).toBe(0)
+    expect(getRewriteAttempts("test-session", "fact-checker")).toBe(0)
+    expect(getRewriteAttempts("test-session", "writer")).toBe(0)
+    expect(getRewriteAttempts("test-session", "researcher")).toBe(0)
   })
 })
 
@@ -300,7 +314,7 @@ describe("analyzeFactCheckOutput with rewrite limits", () => {
     analyzeFactCheckOutput(passOutput, "ses-limit-test")
     analyzeFactCheckOutput(polishOutput, "ses-limit-test")
     // #then
-    expect(getRewriteAttempts("ses-limit-test")).toBe(0)
+    expect(getRewriteAttempts("ses-limit-test", "fact-checker")).toBe(0)
   })
 })
 
@@ -351,6 +365,38 @@ describe("multi-agent confidence routing", () => {
     // #then
     expect(result.agentType).toBe("researcher")
     expect(result.recommendation).toBe("pass")
+  })
+
+  test("should track rewrite attempts per agent type independently", () => {
+    // #given - fact-checker fails twice
+    const lowOutput = "**CONFIDENCE: 0.3**"
+    analyzeAgentOutput(lowOutput, "ses-multi-agent", "fact-checker")
+    analyzeAgentOutput(lowOutput, "ses-multi-agent", "fact-checker")
+    
+    // #when - writer fails once (should not be affected by fact-checker's count)
+    const writerResult = analyzeAgentOutput(lowOutput, "ses-multi-agent", "writer")
+    
+    // #then - writer should still be on attempt 1, not escalated
+    expect(writerResult.recommendation).toBe("rewrite")
+    expect(writerResult.directive).toContain("Rewrite attempt: 1/2")
+    expect(getRewriteAttempts("ses-multi-agent", "fact-checker")).toBe(2)
+    expect(getRewriteAttempts("ses-multi-agent", "writer")).toBe(1)
+  })
+
+  test("should escalate each agent independently", () => {
+    // #given - fact-checker exhausts retries
+    const lowOutput = "**CONFIDENCE: 0.3**"
+    analyzeAgentOutput(lowOutput, "ses-multi-agent", "fact-checker")
+    analyzeAgentOutput(lowOutput, "ses-multi-agent", "fact-checker")
+    const factCheckerResult = analyzeAgentOutput(lowOutput, "ses-multi-agent", "fact-checker")
+    
+    // #when - researcher fails (should start fresh)
+    const researcherResult = analyzeAgentOutput(lowOutput, "ses-multi-agent", "researcher")
+    
+    // #then
+    expect(factCheckerResult.recommendation).toBe("escalate")
+    expect(researcherResult.recommendation).toBe("rewrite")
+    expect(researcherResult.directive).toContain("Rewrite attempt: 1/2")
   })
 })
 
