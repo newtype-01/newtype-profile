@@ -1,4 +1,4 @@
-import { spawn } from "bun"
+import { spawnAsync } from "../../shared/spawn"
 
 let tmuxPath: string | null = null
 let initPromise: Promise<string | null> | null = null
@@ -8,30 +8,18 @@ async function findTmuxPath(): Promise<string | null> {
   const cmd = isWindows ? "where" : "which"
 
   try {
-    const proc = spawn([cmd, "tmux"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    })
-
-    const exitCode = await proc.exited
-    if (exitCode !== 0) {
+    const result = await spawnAsync([cmd, "tmux"])
+    if (result.exitCode !== 0) {
       return null
     }
 
-    const stdout = await new Response(proc.stdout).text()
-    const path = stdout.trim().split("\n")[0]
-
+    const path = result.stdout.trim().split("\n")[0]
     if (!path) {
       return null
     }
 
-    const verifyProc = spawn([path, "-V"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    })
-
-    const verifyExitCode = await verifyProc.exited
-    if (verifyExitCode !== 0) {
+    const verifyResult = await spawnAsync([path, "-V"])
+    if (verifyResult.exitCode !== 0) {
       return null
     }
 

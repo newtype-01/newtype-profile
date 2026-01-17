@@ -1,4 +1,5 @@
 import { tool, type ToolDefinition } from "@opencode-ai/plugin/tool"
+import { spawn, type ChildProcess } from "node:child_process"
 import { BLOCKED_TMUX_SUBCOMMANDS, DEFAULT_TIMEOUT_MS, INTERACTIVE_BASH_DESCRIPTION } from "./constants"
 import { getCachedTmuxPath } from "./utils"
 
@@ -67,36 +68,44 @@ export const interactive_bash: ToolDefinition = tool({
         return `Error: '${parts[0]}' is blocked. Use bash tool instead for capturing/printing terminal output.`
       }
 
-      const proc = Bun.spawn([tmuxPath, ...parts], {
-        stdout: "pipe",
-        stderr: "pipe",
-      })
+      const result = await new Promise<{ stdout: string; stderr: string; exitCode: number }>((resolve, reject) => {
+        const proc: ChildProcess = spawn(tmuxPath, parts, {
+          stdio: ["ignore", "pipe", "pipe"],
+        })
 
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        const id = setTimeout(() => {
+        let stdout = ""
+        let stderr = ""
+        let killed = false
+
+        const timeout = setTimeout(() => {
+          killed = true
           proc.kill()
           reject(new Error(`Timeout after ${DEFAULT_TIMEOUT_MS}ms`))
         }, DEFAULT_TIMEOUT_MS)
-        proc.exited.then(() => clearTimeout(id))
+
+        proc.stdout?.on("data", (data: Buffer) => { stdout += data.toString() })
+        proc.stderr?.on("data", (data: Buffer) => { stderr += data.toString() })
+
+        proc.on("close", (code) => {
+          clearTimeout(timeout)
+          if (!killed) {
+            resolve({ stdout, stderr, exitCode: code ?? 1 })
+          }
+        })
+
+        proc.on("error", (err) => {
+          clearTimeout(timeout)
+          reject(err)
+        })
       })
 
-      // Read stdout and stderr in parallel to avoid race conditions
-      const [stdout, stderr, exitCode] = await Promise.race([
-        Promise.all([
-          new Response(proc.stdout).text(),
-          new Response(proc.stderr).text(),
-          proc.exited,
-        ]),
-        timeoutPromise,
-      ])
-
       // Check exitCode properly - return error even if stderr is empty
-      if (exitCode !== 0) {
-        const errorMsg = stderr.trim() || `Command failed with exit code ${exitCode}`
+      if (result.exitCode !== 0) {
+        const errorMsg = result.stderr.trim() || `Command failed with exit code ${result.exitCode}`
         return `Error: ${errorMsg}`
       }
 
-      return stdout || "(no output)"
+      return result.stdout || "(no output)"
     } catch (e) {
       return `Error: ${e instanceof Error ? e.message : String(e)}`
     }

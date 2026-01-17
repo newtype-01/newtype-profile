@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, chmodSync, unlinkSync, readdirSync } from "node:fs"
 import { join } from "node:path"
-import { spawn } from "bun"
+import { spawnAsync, writeFileSafe } from "../../shared/spawn"
 
 export function findFileRecursive(dir: string, filename: string): string | null {
   try {
@@ -47,7 +47,7 @@ async function downloadFile(url: string, destPath: string): Promise<void> {
   }
 
   const buffer = await response.arrayBuffer()
-  await Bun.write(destPath, buffer)
+  await writeFileSafe(destPath, buffer)
 }
 
 async function extractTarGz(archivePath: string, destDir: string): Promise<void> {
@@ -61,26 +61,17 @@ async function extractTarGz(archivePath: string, destDir: string): Promise<void>
     args.push("--wildcards", "*/rg")
   }
 
-  const proc = spawn(args, {
-    cwd: destDir,
-    stdout: "pipe",
-    stderr: "pipe",
-  })
-
-  const exitCode = await proc.exited
-  if (exitCode !== 0) {
-    const stderr = await new Response(proc.stderr).text()
-    throw new Error(`Failed to extract tar.gz: ${stderr}`)
+  const result = await spawnAsync(args, { cwd: destDir })
+  if (result.exitCode !== 0) {
+    throw new Error(`Failed to extract tar.gz: ${result.stderr}`)
   }
 }
 
 async function extractZipWindows(archivePath: string, destDir: string): Promise<void> {
-  const proc = spawn(
-    ["powershell", "-Command", `Expand-Archive -Path '${archivePath}' -DestinationPath '${destDir}' -Force`],
-    { stdout: "pipe", stderr: "pipe" }
+  const result = await spawnAsync(
+    ["powershell", "-Command", `Expand-Archive -Path '${archivePath}' -DestinationPath '${destDir}' -Force`]
   )
-  const exitCode = await proc.exited
-  if (exitCode !== 0) {
+  if (result.exitCode !== 0) {
     throw new Error("Failed to extract zip with PowerShell")
   }
 
@@ -95,12 +86,8 @@ async function extractZipWindows(archivePath: string, destDir: string): Promise<
 }
 
 async function extractZipUnix(archivePath: string, destDir: string): Promise<void> {
-  const proc = spawn(["unzip", "-o", archivePath, "-d", destDir], {
-    stdout: "pipe",
-    stderr: "pipe",
-  })
-  const exitCode = await proc.exited
-  if (exitCode !== 0) {
+  const result = await spawnAsync(["unzip", "-o", archivePath, "-d", destDir])
+  if (result.exitCode !== 0) {
     throw new Error("Failed to extract zip")
   }
 

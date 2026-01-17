@@ -1,4 +1,3 @@
-import { spawn } from "bun"
 import {
   resolveGrepCli,
   type GrepBackend,
@@ -8,6 +7,7 @@ import {
   DEFAULT_MAX_OUTPUT_BYTES,
   RG_FILES_FLAGS,
 } from "./constants"
+import { spawnAsync } from "../../shared/spawn"
 import type { GlobOptions, GlobResult, FileMatch } from "./types"
 import { stat } from "node:fs/promises"
 
@@ -104,24 +104,9 @@ export async function runRgFiles(
     command = [cli.path, ...args]
   }
 
-  const proc = spawn(command, {
-    stdout: "pipe",
-    stderr: "pipe",
-    cwd,
-  })
-
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    const id = setTimeout(() => {
-      proc.kill()
-      reject(new Error(`Glob search timeout after ${timeout}ms`))
-    }, timeout)
-    proc.exited.then(() => clearTimeout(id))
-  })
-
   try {
-    const stdout = await Promise.race([new Response(proc.stdout).text(), timeoutPromise])
-    const stderr = await new Response(proc.stderr).text()
-    const exitCode = await proc.exited
+    const result = await spawnAsync(command, { cwd, timeout })
+    const { stdout, stderr, exitCode } = result
 
     if (exitCode > 1 && stderr.trim()) {
       return {

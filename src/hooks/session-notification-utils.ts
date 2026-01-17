@@ -1,4 +1,4 @@
-import { spawn } from "bun"
+import { spawnAsync } from "../shared/spawn"
 
 type Platform = "darwin" | "linux" | "win32" | "unsupported"
 
@@ -25,19 +25,12 @@ async function findCommand(commandName: string): Promise<string | null> {
   const cmd = isWindows ? "where" : "which"
 
   try {
-    const proc = spawn([cmd, commandName], {
-      stdout: "pipe",
-      stderr: "pipe",
-    })
-
-    const exitCode = await proc.exited
-    if (exitCode !== 0) {
+    const result = await spawnAsync([cmd, commandName])
+    if (result.exitCode !== 0) {
       return null
     }
 
-    const stdout = await new Response(proc.stdout).text()
-    const path = stdout.trim().split("\n")[0]
-
+    const path = result.stdout.trim().split("\n")[0]
     if (!path) {
       return null
     }

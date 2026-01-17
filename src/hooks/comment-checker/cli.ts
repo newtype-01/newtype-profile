@@ -1,9 +1,9 @@
-import { spawn } from "bun"
 import { createRequire } from "module"
 import { dirname, join } from "path"
 import { existsSync } from "fs"
 import * as fs from "fs"
 import { tmpdir } from "os"
+import { spawnAsync } from "../../shared/spawn"
 import { getCachedBinaryPath, ensureCommentCheckerBinary } from "./downloader"
 
 const DEBUG = process.env.COMMENT_CHECKER_DEBUG === "1"
@@ -173,33 +173,19 @@ export async function runCommentChecker(input: HookInput, cliPath?: string, cust
       args.push("--prompt", customPrompt)
     }
     
-    const proc = spawn(args, {
-      stdin: "pipe",
-      stdout: "pipe",
-      stderr: "pipe",
-    })
+    const result = await spawnAsync(args, { stdin: jsonInput })
 
-    // Write JSON to stdin
-    proc.stdin.write(jsonInput)
-    proc.stdin.end()
+    debugLog("exit code:", result.exitCode, "stdout length:", result.stdout.length, "stderr length:", result.stderr.length)
 
-    const stdout = await new Response(proc.stdout).text()
-    const stderr = await new Response(proc.stderr).text()
-    const exitCode = await proc.exited
-
-    debugLog("exit code:", exitCode, "stdout length:", stdout.length, "stderr length:", stderr.length)
-
-    if (exitCode === 0) {
+    if (result.exitCode === 0) {
       return { hasComments: false, message: "" }
     }
 
-    if (exitCode === 2) {
-      // Comments detected - message is in stderr
-      return { hasComments: true, message: stderr }
+    if (result.exitCode === 2) {
+      return { hasComments: true, message: result.stderr }
     }
 
-    // Error case
-    debugLog("unexpected exit code:", exitCode, "stderr:", stderr)
+    debugLog("unexpected exit code:", result.exitCode, "stderr:", result.stderr)
     return { hasComments: false, message: "" }
   } catch (err) {
     debugLog("failed to run comment-checker:", err)

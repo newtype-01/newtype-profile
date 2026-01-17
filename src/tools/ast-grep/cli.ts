@@ -1,4 +1,3 @@
-import { spawn } from "bun"
 import { existsSync } from "fs"
 import {
   getSgCliPath,
@@ -8,6 +7,7 @@ import {
   DEFAULT_MAX_OUTPUT_BYTES,
   DEFAULT_MAX_MATCHES,
 } from "./constants"
+import { spawnAsync } from "../../shared/spawn"
 import { ensureAstGrepBinary } from "./downloader"
 import type { CliMatch, CliLanguage, SgResult } from "./types"
 
@@ -95,30 +95,18 @@ export async function runSg(options: RunOptions): Promise<SgResult> {
 
   const timeout = DEFAULT_TIMEOUT_MS
 
-  const proc = spawn([cliPath, ...args], {
-    stdout: "pipe",
-    stderr: "pipe",
-  })
-
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    const id = setTimeout(() => {
-      proc.kill()
-      reject(new Error(`Search timeout after ${timeout}ms`))
-    }, timeout)
-    proc.exited.then(() => clearTimeout(id))
-  })
-
   let stdout: string
   let stderr: string
   let exitCode: number
 
   try {
-    stdout = await Promise.race([new Response(proc.stdout).text(), timeoutPromise])
-    stderr = await new Response(proc.stderr).text()
-    exitCode = await proc.exited
+    const result = await spawnAsync([cliPath, ...args], { timeout })
+    stdout = result.stdout
+    stderr = result.stderr
+    exitCode = result.exitCode
   } catch (e) {
     const error = e as Error
-    if (error.message?.includes("timeout")) {
+    if (error.message?.includes("Timeout")) {
       return {
         matches: [],
         totalMatches: 0,

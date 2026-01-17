@@ -1,4 +1,3 @@
-import { spawn } from "bun"
 import {
   resolveGrepCli,
   type GrepBackend,
@@ -11,6 +10,7 @@ import {
   RG_SAFETY_FLAGS,
   GREP_SAFETY_FLAGS,
 } from "./constants"
+import { spawnAsync } from "../../shared/spawn"
 import type { GrepOptions, GrepMatch, GrepResult, CountResult } from "./types"
 
 function buildRgArgs(options: GrepOptions): string[] {
@@ -142,23 +142,10 @@ export async function runRg(options: GrepOptions): Promise<GrepResult> {
 
   const paths = options.paths?.length ? options.paths : ["."]
   args.push(...paths)
-  const proc = spawn([cli.path, ...args], {
-    stdout: "pipe",
-    stderr: "pipe",
-  })
-
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    const id = setTimeout(() => {
-      proc.kill()
-      reject(new Error(`Search timeout after ${timeout}ms`))
-    }, timeout)
-    proc.exited.then(() => clearTimeout(id))
-  })
 
   try {
-    const stdout = await Promise.race([new Response(proc.stdout).text(), timeoutPromise])
-    const stderr = await new Response(proc.stderr).text()
-    const exitCode = await proc.exited
+    const result = await spawnAsync([cli.path, ...args], { timeout })
+    const { stdout, stderr, exitCode } = result
 
     const truncated = stdout.length >= DEFAULT_MAX_OUTPUT_BYTES
     const outputToProcess = truncated ? stdout.substring(0, DEFAULT_MAX_OUTPUT_BYTES) : stdout
@@ -207,22 +194,10 @@ export async function runRgCount(options: Omit<GrepOptions, "context">): Promise
   args.push(...paths)
 
   const timeout = Math.min(options.timeout ?? DEFAULT_TIMEOUT_MS, DEFAULT_TIMEOUT_MS)
-  const proc = spawn([cli.path, ...args], {
-    stdout: "pipe",
-    stderr: "pipe",
-  })
-
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    const id = setTimeout(() => {
-      proc.kill()
-      reject(new Error(`Search timeout after ${timeout}ms`))
-    }, timeout)
-    proc.exited.then(() => clearTimeout(id))
-  })
 
   try {
-    const stdout = await Promise.race([new Response(proc.stdout).text(), timeoutPromise])
-    return parseCountOutput(stdout)
+    const result = await spawnAsync([cli.path, ...args], { timeout })
+    return parseCountOutput(result.stdout)
   } catch (e) {
     throw new Error(`Count search failed: ${e instanceof Error ? e.message : String(e)}`)
   }

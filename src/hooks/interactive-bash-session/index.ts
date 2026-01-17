@@ -1,4 +1,5 @@
 import type { PluginInput } from "@opencode-ai/plugin";
+import { spawn, type ChildProcess } from "node:child_process";
 import {
   loadInteractiveBashSessionState,
   saveInteractiveBashSessionState,
@@ -171,11 +172,13 @@ export function createInteractiveBashSessionHook(_ctx: PluginInput) {
   ): Promise<void> {
     for (const sessionName of state.tmuxSessions) {
       try {
-        const proc = Bun.spawn(["tmux", "kill-session", "-t", sessionName], {
-          stdout: "ignore",
-          stderr: "ignore",
+        await new Promise<void>((resolve) => {
+          const proc: ChildProcess = spawn("tmux", ["kill-session", "-t", sessionName], {
+            stdio: "ignore",
+          });
+          proc.on("close", () => resolve());
+          proc.on("error", () => resolve());
         });
-        await proc.exited;
       } catch {}
     }
   }

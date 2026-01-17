@@ -1,4 +1,4 @@
-import { spawn, type Subprocess } from "bun"
+import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process"
 import { readFileSync } from "fs"
 import { extname, resolve } from "path"
 import { getLanguageId } from "./config"
@@ -10,6 +10,11 @@ interface ManagedClient {
   refCount: number
   initPromise?: Promise<void>
   isInitializing: boolean
+}
+
+interface NodeProcess {
+  proc: ChildProcess
+  exitCode: number | null
 }
 
 class LSPServerManager {
@@ -187,7 +192,8 @@ class LSPServerManager {
 export const lspManager = LSPServerManager.getInstance()
 
 export class LSPClient {
-  private proc: Subprocess<"pipe", "pipe", "pipe"> | null = null
+  private proc: ChildProcess | null = null
+  private procExitCode: number | null = null
   private buffer: Uint8Array = new Uint8Array(0)
   private pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: Error) => void }>()
   private requestIdCounter = 0
@@ -202,10 +208,9 @@ export class LSPClient {
   ) {}
 
   async start(): Promise<void> {
-    this.proc = spawn(this.server.command, {
-      stdin: "pipe",
-      stdout: "pipe",
-      stderr: "pipe",
+    const [cmd, ...args] = this.server.command
+    this.proc = spawn(cmd, args, {
+      stdio: ["pipe", "pipe", "pipe"],
       cwd: this.root,
       env: {
         ...process.env,
@@ -217,66 +222,62 @@ export class LSPClient {
       throw new Error(`Failed to spawn LSP server: ${this.server.command.join(" ")}`)
     }
 
+    this.proc.on("exit", (code) => {
+      this.procExitCode = code
+      this.processExited = true
+    })
+
+    this.proc.on("error", (err) => {
+      this.processExited = true
+      this.rejectAllPending(`LSP spawn error: ${err.message}`)
+    })
+
     this.startReading()
     this.startStderrReading()
 
     await new Promise((resolve) => setTimeout(resolve, 100))
 
-    if (this.proc.exitCode !== null) {
+    if (this.procExitCode !== null) {
       const stderr = this.stderrBuffer.join("\n")
       throw new Error(
-        `LSP server exited immediately with code ${this.proc.exitCode}` + (stderr ? `\nstderr: ${stderr}` : "")
+        `LSP server exited immediately with code ${this.procExitCode}` + (stderr ? `\nstderr: ${stderr}` : "")
       )
     }
   }
 
   private startReading(): void {
-    if (!this.proc) return
+    if (!this.proc?.stdout) return
 
-    const reader = this.proc.stdout.getReader()
-    const read = async () => {
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) {
-            this.processExited = true
-            this.rejectAllPending("LSP server stdout closed")
-            break
-          }
-          const newBuf = new Uint8Array(this.buffer.length + value.length)
-          newBuf.set(this.buffer)
-          newBuf.set(value, this.buffer.length)
-          this.buffer = newBuf
-          this.processBuffer()
-        }
-      } catch (err) {
-        this.processExited = true
-        this.rejectAllPending(`LSP stdout read error: ${err}`)
-      }
-    }
-    read()
+    this.proc.stdout.on("data", (chunk: Buffer) => {
+      const value = new Uint8Array(chunk)
+      const newBuf = new Uint8Array(this.buffer.length + value.length)
+      newBuf.set(this.buffer)
+      newBuf.set(value, this.buffer.length)
+      this.buffer = newBuf
+      this.processBuffer()
+    })
+
+    this.proc.stdout.on("close", () => {
+      this.processExited = true
+      this.rejectAllPending("LSP server stdout closed")
+    })
+
+    this.proc.stdout.on("error", (err) => {
+      this.processExited = true
+      this.rejectAllPending(`LSP stdout read error: ${err}`)
+    })
   }
 
   private startStderrReading(): void {
-    if (!this.proc) return
+    if (!this.proc?.stderr) return
 
-    const reader = this.proc.stderr.getReader()
-    const read = async () => {
-      const decoder = new TextDecoder()
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          const text = decoder.decode(value)
-          this.stderrBuffer.push(text)
-          if (this.stderrBuffer.length > 100) {
-            this.stderrBuffer.shift()
-          }
-        }
-      } catch {
+    this.proc.stderr.on("data", (chunk: Buffer) => {
+      const text = chunk.toString()
+      this.stderrBuffer.push(text)
+      if (this.stderrBuffer.length > 100) {
+        this.stderrBuffer.shift()
       }
-    }
-    read()
+    })
   }
 
   private rejectAllPending(reason: string): void {
@@ -353,15 +354,15 @@ export class LSPClient {
   private send(method: string, params?: unknown): Promise<unknown> {
     if (!this.proc) throw new Error("LSP client not started")
 
-    if (this.processExited || this.proc.exitCode !== null) {
+    if (this.processExited || this.procExitCode !== null) {
       const stderr = this.stderrBuffer.slice(-10).join("\n")
-      throw new Error(`LSP server already exited (code: ${this.proc.exitCode})` + (stderr ? `\nstderr: ${stderr}` : ""))
+      throw new Error(`LSP server already exited (code: ${this.procExitCode})` + (stderr ? `\nstderr: ${stderr}` : ""))
     }
 
     const id = ++this.requestIdCounter
     const msg = JSON.stringify({ jsonrpc: "2.0", id, method, params })
     const header = `Content-Length: ${Buffer.byteLength(msg)}\r\n\r\n`
-    this.proc.stdin.write(header + msg)
+    this.proc.stdin?.write(header + msg)
 
     return new Promise((resolve, reject) => {
       this.pending.set(id, { resolve, reject })
@@ -376,16 +377,16 @@ export class LSPClient {
   }
 
   private notify(method: string, params?: unknown): void {
-    if (!this.proc) return
-    if (this.processExited || this.proc.exitCode !== null) return
+    if (!this.proc?.stdin) return
+    if (this.processExited || this.procExitCode !== null) return
 
     const msg = JSON.stringify({ jsonrpc: "2.0", method, params })
     this.proc.stdin.write(`Content-Length: ${Buffer.byteLength(msg)}\r\n\r\n${msg}`)
   }
 
   private respond(id: number | string, result: unknown): void {
-    if (!this.proc) return
-    if (this.processExited || this.proc.exitCode !== null) return
+    if (!this.proc?.stdin) return
+    if (this.processExited || this.procExitCode !== null) return
 
     const msg = JSON.stringify({ jsonrpc: "2.0", id, result })
     this.proc.stdin.write(`Content-Length: ${Buffer.byteLength(msg)}\r\n\r\n${msg}`)
@@ -594,7 +595,7 @@ export class LSPClient {
   }
 
   isAlive(): boolean {
-    return this.proc !== null && !this.processExited && this.proc.exitCode === null
+    return this.proc !== null && !this.processExited && this.procExitCode === null
   }
 
   async stop(): Promise<void> {

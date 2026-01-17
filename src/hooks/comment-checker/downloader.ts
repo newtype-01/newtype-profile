@@ -1,8 +1,8 @@
-import { spawn } from "bun"
 import { existsSync, mkdirSync, chmodSync, unlinkSync, appendFileSync } from "fs"
 import { join } from "path"
 import { homedir, tmpdir } from "os"
 import { createRequire } from "module"
+import { spawnAsync, writeFileSafe } from "../../shared/spawn"
 
 const DEBUG = process.env.COMMENT_CHECKER_DEBUG === "1"
 const DEBUG_FILE = join(tmpdir(), "comment-checker-debug.log")
@@ -76,46 +76,27 @@ function getPackageVersion(): string {
   }
 }
 
-/**
- * Extract tar.gz archive using system tar command.
- */
 async function extractTarGz(archivePath: string, destDir: string): Promise<void> {
   debugLog("Extracting tar.gz:", archivePath, "to", destDir)
   
-  const proc = spawn(["tar", "-xzf", archivePath, "-C", destDir], {
-    stdout: "pipe",
-    stderr: "pipe",
-  })
+  const result = await spawnAsync(["tar", "-xzf", archivePath, "-C", destDir])
   
-  const exitCode = await proc.exited
-  
-  if (exitCode !== 0) {
-    const stderr = await new Response(proc.stderr).text()
-    throw new Error(`tar extraction failed (exit ${exitCode}): ${stderr}`)
+  if (result.exitCode !== 0) {
+    throw new Error(`tar extraction failed (exit ${result.exitCode}): ${result.stderr}`)
   }
 }
 
-/**
- * Extract zip archive using system commands.
- */
 async function extractZip(archivePath: string, destDir: string): Promise<void> {
   debugLog("Extracting zip:", archivePath, "to", destDir)
   
-  const proc = process.platform === "win32"
-    ? spawn(["powershell", "-command", `Expand-Archive -Path '${archivePath}' -DestinationPath '${destDir}' -Force`], {
-        stdout: "pipe",
-        stderr: "pipe",
-      })
-    : spawn(["unzip", "-o", archivePath, "-d", destDir], {
-        stdout: "pipe",
-        stderr: "pipe",
-      })
+  const command = process.platform === "win32"
+    ? ["powershell", "-command", `Expand-Archive -Path '${archivePath}' -DestinationPath '${destDir}' -Force`]
+    : ["unzip", "-o", archivePath, "-d", destDir]
   
-  const exitCode = await proc.exited
+  const result = await spawnAsync(command)
   
-  if (exitCode !== 0) {
-    const stderr = await new Response(proc.stderr).text()
-    throw new Error(`zip extraction failed (exit ${exitCode}): ${stderr}`)
+  if (result.exitCode !== 0) {
+    throw new Error(`zip extraction failed (exit ${result.exitCode}): ${result.stderr}`)
   }
 }
 
@@ -165,7 +146,7 @@ export async function downloadCommentChecker(): Promise<string | null> {
     
     const archivePath = join(cacheDir, assetName)
     const arrayBuffer = await response.arrayBuffer()
-    await Bun.write(archivePath, arrayBuffer)
+    await writeFileSafe(archivePath, arrayBuffer)
     
     debugLog(`Downloaded archive to: ${archivePath}`)
     
