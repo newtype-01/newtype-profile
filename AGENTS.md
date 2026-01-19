@@ -32,20 +32,54 @@ src/
 └── index.ts     # Main plugin entry
 ```
 
+## THREE-LAYER ARCHITECTURE
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Chief (Opus 4.5)                     │
+│                   思考者 / Thinker                       │
+│  • 与用户对话，理解需求                                   │
+│  • 高层任务拆解                                          │
+│  • 最终审核与交付                                        │
+│  • 不需要专业 Agent 时，自己处理                          │
+└─────────────────────┬───────────────────────────────────┘
+                      │ 精简指令
+                      ↓
+┌─────────────────────────────────────────────────────────┐
+│                   Deputy (Sonnet 4.5)                   │
+│                   执行者 / Doer                          │
+│  • 接收 Chief 的精简指令                                 │
+│  • 简单任务自己执行                                       │
+│  • 复杂任务调度专业 Agents                                │
+│  • 汇总过滤输出，返回精简结果给 Chief                     │
+└─────────────────────┬───────────────────────────────────┘
+                      │ 调用
+                      ↓
+┌─────────────────────────────────────────────────────────┐
+│              Specialists (Gemini/Sonnet)                │
+│  researcher, writer, fact-checker, editor, etc.        │
+└─────────────────────────────────────────────────────────┘
+```
+
+**三个价值：**
+1. **Context 隔离** — 专业 Agent 的冗长输出不污染 Chief 的 context
+2. **成本控制** — Opus 只做决策，Sonnet 做调度，便宜模型做执行
+3. **职责分离** — Thinker vs Doer
+
 ## AGENT TEAM & QUALITY DIMENSIONS
 
-| Agent | Model | Quality Dimensions |
-|-------|-------|-------------------|
-| **chief** | Claude Opus 4.5 | N/A (orchestrator) |
-| **deputy** | Claude Sonnet 4.5 | Executes delegated tasks |
-| **researcher** | Gemini 3 Pro High | Coverage, Sources, Relevance |
-| **fact-checker** | Gemini 3 Pro High | Accuracy, Authority, Completeness |
-| **archivist** | Claude Sonnet 4.5 | Coverage, Connections, Relevance |
-| **extractor** | Gemini 3 Flash | Accuracy, Completeness, Format |
-| **writer** | Gemini 3 Pro High | Structure, Clarity, Grounding |
-| **editor** | Claude Sonnet 4.5 | Polish, Logic, Consistency |
+| Agent | Model | Role | Quality Dimensions |
+|-------|-------|------|-------------------|
+| **chief** | Claude Opus 4.5 | 思考者/协调者 | N/A |
+| **deputy** | Claude Sonnet 4.5 | 执行者/调度者 | N/A |
+| **researcher** | Gemini 3 Pro High | 情报员 | Coverage, Sources, Relevance |
+| **fact-checker** | Gemini 3 Pro High | 核查员 | Accuracy, Authority, Completeness |
+| **archivist** | Claude Sonnet 4.5 | 资料员 | Coverage, Connections, Relevance |
+| **extractor** | Gemini 3 Flash | 格式员 | Accuracy, Completeness, Format |
+| **writer** | Gemini 3 Pro High | 写手 | Structure, Clarity, Grounding |
+| **editor** | Claude Sonnet 4.5 | 编辑 | Polish, Logic, Consistency |
 
-Each agent outputs multi-dimensional scores. Chief uses WEAKEST dimension to provide targeted feedback.
+Each specialist agent outputs multi-dimensional scores. Deputy uses WEAKEST dimension to request targeted improvements.
 
 ## CODE STYLE
 

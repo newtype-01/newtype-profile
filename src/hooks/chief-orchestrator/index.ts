@@ -349,6 +349,18 @@ function isCallerOrchestrator(sessionID?: string): boolean {
   return nearest?.agent === "chief"
 }
 
+function isCallerDeputy(sessionID?: string): boolean {
+  if (!sessionID) return false
+  const messageDir = getMessageDir(sessionID)
+  if (!messageDir) return false
+  const nearest = findNearestMessageWithFields(messageDir)
+  return nearest?.agent === "deputy"
+}
+
+function isCallerChiefOrDeputy(sessionID?: string): boolean {
+  return isCallerOrchestrator(sessionID) || isCallerDeputy(sessionID)
+}
+
 interface SessionState {
   lastEventWasAbortError?: boolean
 }
@@ -558,23 +570,28 @@ export function createChiefOrchestratorHook(
       input: { tool: string; sessionID?: string; callID?: string },
       output: { args: Record<string, unknown>; message?: string }
     ): Promise<void> => {
+      const callerIsChief = isCallerOrchestrator(input.sessionID)
+      const callerIsDeputy = isCallerDeputy(input.sessionID)
+      
       if (input.tool === "chief_task") {
         log(`[${HOOK_NAME}] chief_task detected`, {
           sessionID: input.sessionID,
           callID: input.callID,
-          isOrchestrator: isCallerOrchestrator(input.sessionID),
+          caller: callerIsChief ? "chief" : callerIsDeputy ? "deputy" : "other",
         })
       }
 
-      if (!isCallerOrchestrator(input.sessionID)) {
+      if (!callerIsChief && !callerIsDeputy) {
         return
       }
 
-      // Check Write/Edit tools for orchestrator - inject strong warning
       if (WRITE_EDIT_TOOLS.includes(input.tool)) {
+        // Only Chief gets the delegation warning (Deputy is allowed to edit directly)
+        if (!callerIsChief) {
+          return
+        }
         const filePath = (output.args.filePath ?? output.args.path ?? output.args.file) as string | undefined
         if (filePath && !filePath.includes(ALLOWED_PATH_PREFIX)) {
-          // Store filePath for use in tool.execute.after
           if (input.callID) {
             pendingFilePaths.set(input.callID, filePath)
           }
@@ -636,11 +653,18 @@ export function createChiefOrchestratorHook(
       input: ToolExecuteAfterInput,
       output: ToolExecuteAfterOutput
     ): Promise<void> => {
-      if (!isCallerOrchestrator(input.sessionID)) {
+      const callerIsChief = isCallerOrchestrator(input.sessionID)
+      const callerIsDeputy = isCallerDeputy(input.sessionID)
+      
+      if (!callerIsChief && !callerIsDeputy) {
         return
       }
 
       if (WRITE_EDIT_TOOLS.includes(input.tool)) {
+        // Only Chief gets the direct work reminder (Deputy is allowed to edit)
+        if (!callerIsChief) {
+          return
+        }
         let filePath = input.callID ? pendingFilePaths.get(input.callID) : undefined
         if (input.callID) {
           pendingFilePaths.delete(input.callID)

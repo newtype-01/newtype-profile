@@ -199,19 +199,38 @@ export const AGENT_TO_CATEGORY_MAP: Record<string, string> = {
 
 const BUILTIN_CATEGORIES = Object.keys(DEFAULT_CATEGORIES).join(", ")
 
-export const CHIEF_TASK_DESCRIPTION = `Spawn agent task with category-based or direct agent selection.
+export const CHIEF_TASK_DESCRIPTION = `Spawn agent task for delegation.
 
-MUTUALLY EXCLUSIVE: Provide EITHER category OR agent, not both (unless resuming).
+## Three-Layer Architecture
+\`\`\`
+Chief (you) → Deputy → Specialist Agents
+\`\`\`
 
-- category: Use predefined category (${BUILTIN_CATEGORIES}) → Spawns Deputy with category config
-- agent: Use specific agent directly (e.g., "researcher", "writer", "fact-checker", "archivist")
-- background: true=async (returns task_id), false=sync (waits for result). Default: false. Use background=true for parallel research tasks.
-- resume: Session ID to resume (from previous task output). Continues agent with FULL CONTEXT PRESERVED.
-- skills: Array of skill names to prepend to prompt. Empty array = no prepending.
+## For Chief:
+**Always delegate to Deputy first** (Deputy will dispatch to specialists as needed):
+\`\`\`
+chief_task(subagent_type="deputy", prompt="...", run_in_background=false, skills=[])
+\`\`\`
 
-**WHEN TO USE resume:**
-- Task failed/incomplete → resume with "fix: [specific issue]"
-- Need follow-up on previous result → resume with additional question
-- Multi-turn conversation with same agent → always resume instead of new task
+## For Deputy:
+Dispatch to specialist agents:
+- subagent_type="researcher" → External research
+- subagent_type="writer" → Content creation
+- subagent_type="fact-checker" → Verification
+- subagent_type="editor" → Refinement
+- subagent_type="archivist" → Knowledge base
+- subagent_type="extractor" → Document extraction
+
+## Parameters
+- subagent_type: Agent name (e.g., "deputy", "researcher", "writer")
+- category: Alternative to subagent_type, uses predefined config (${BUILTIN_CATEGORIES})
+- run_in_background: true=async, false=sync (wait for result)
+- resume: Session ID to continue previous conversation
+- skills: Array of skill names to prepend. Use [] if none.
+
+## Resume Usage
+- Task failed → resume with "fix: [specific issue]"
+- Follow-up needed → resume with additional question
+- Multi-turn → always resume instead of new task
 
 Prompts MUST be in English.`
