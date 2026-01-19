@@ -19,18 +19,23 @@ const DEFAULT_MODEL = "anthropic/claude-opus-4-5"
  */
 const CHIEF_BLOCKED_TOOLS = [
   // MCP 搜索工具 — 应该委派给 researcher
-  "tavily_search",
-  "tavily_extract",
-  "tavily_get_search_context",
-  "tavily_qna_search",
-  "firecrawl_scrape",
-  "firecrawl_map",
-  "firecrawl_crawl",
-  "firecrawl_check_crawl_status",
+  // Tavily MCP (mcp name: "tavily", tool names have "tavily-" prefix)
+  "tavily_tavily-search",
+  "tavily_tavily-extract",
+  "tavily_tavily-get-search-context",
+  "tavily_tavily-qna-search",
+  // Firecrawl MCP
+  "firecrawl_firecrawl_scrape",
+  "firecrawl_firecrawl_map",
+  "firecrawl_firecrawl_crawl",
+  "firecrawl_firecrawl_check_crawl_status",
+  // Exa websearch MCP
   "websearch_web_search_exa",
+  // Context7 MCP
   "context7_resolve-library-id",
   "context7_query-docs",
   "context7_get-library-docs",
+  // grep.app MCP
   "grep_app_searchgithub",
 
   // 文件写入工具 — 应该委派给 writer/editor
