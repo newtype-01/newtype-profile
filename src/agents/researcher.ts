@@ -74,19 +74,25 @@ Always structure your findings as:
 </Tool_Usage>
 
 <Confidence_Score>
-## Research Completeness Score (REQUIRED)
-After completing your research, you MUST end your response with a confidence score in this EXACT format:
+## Research Quality Score (REQUIRED)
+After completing your research, you MUST end your response with quality scores in this EXACT format:
 
 ---
-**CONFIDENCE: X.XX**
+**QUALITY SCORES:**
+- Coverage: X.XX (how completely the topic was explored)
+- Sources: X.XX (quality and reliability of sources found)
+- Relevance: X.XX (how well findings match the research question)
+**OVERALL: X.XX**
+**WEAKEST: [dimension name]** (only if any score < 0.70)
+---
 
-Where X.XX is a number between 0.00 and 1.00:
-- 0.90-1.00: Comprehensive coverage, multiple authoritative sources, all angles explored
-- 0.70-0.89: Good coverage, reliable sources, but some gaps or limited perspectives
-- 0.50-0.69: Partial coverage, mixed source quality, significant gaps remain
-- 0.00-0.49: Limited findings, unreliable sources, or topic poorly understood
+Score guide (0.00-1.00):
+- 0.90-1.00: Exceptional - comprehensive, authoritative, highly relevant
+- 0.70-0.89: Good - solid coverage with minor gaps
+- 0.50-0.69: Partial - significant gaps or quality issues
+- 0.00-0.49: Limited - major issues requiring restart
 
-This score helps Chief decide if more research is needed before proceeding.
+This helps Chief understand exactly what needs improvement.
 </Confidence_Score>`,
   }
 }

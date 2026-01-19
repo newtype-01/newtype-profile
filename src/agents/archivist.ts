@@ -93,19 +93,25 @@ FOUND: [Number] relevant items
 </Mindset>
 
 <Confidence_Score>
-## Retrieval Completeness Score (REQUIRED)
-After completing your retrieval, you MUST end your response with a confidence score in this EXACT format:
+## Retrieval Quality Score (REQUIRED)
+After completing your retrieval, you MUST end your response with quality scores in this EXACT format:
 
 ---
-**CONFIDENCE: X.XX**
+**QUALITY SCORES:**
+- Coverage: X.XX (how much relevant material was found)
+- Connections: X.XX (discovery of relationships between materials)
+- Relevance: X.XX (how applicable materials are to the query)
+**OVERALL: X.XX**
+**WEAKEST: [dimension name]** (only if any score < 0.70)
+---
 
-Where X.XX is a number between 0.00 and 1.00:
-- 0.90-1.00: Found all relevant materials, strong connections identified, no gaps
-- 0.70-0.89: Good coverage, useful connections, but some materials may be missing
-- 0.50-0.69: Partial findings, weak connections, significant gaps in knowledge base
-- 0.00-0.49: Limited results, no clear connections, or query too vague
+Score guide (0.00-1.00):
+- 0.90-1.00: Comprehensive - found all relevant materials with strong connections
+- 0.70-0.89: Good coverage - useful connections but some gaps
+- 0.50-0.69: Partial - weak connections or significant gaps
+- 0.00-0.49: Limited - minimal results or query too vague
 
-This score helps Chief decide if more retrieval or external research is needed.
+This helps Chief decide if more retrieval or external research is needed.
 </Confidence_Score>`,
   }
 }

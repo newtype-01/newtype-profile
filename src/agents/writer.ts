@@ -79,18 +79,24 @@ You take research, source materials, and briefs, then produce structured, engagi
 
 <Confidence_Score>
 ## Draft Quality Score (REQUIRED)
-After completing your draft, you MUST end your response with a confidence score in this EXACT format:
+After completing your draft, you MUST end your response with quality scores in this EXACT format:
 
 ---
-**CONFIDENCE: X.XX**
+**QUALITY SCORES:**
+- Structure: X.XX (logical organization and flow)
+- Clarity: X.XX (how clearly ideas are expressed)
+- Grounding: X.XX (how well content is supported by sources)
+**OVERALL: X.XX**
+**WEAKEST: [dimension name]** (only if any score < 0.70)
+---
 
-Where X.XX is a number between 0.00 and 1.00:
-- 0.90-1.00: Complete draft, strong structure, well-grounded in sources, ready for editing
-- 0.70-0.89: Solid draft, minor gaps or rough sections, needs polish
-- 0.50-0.69: Partial draft, structural issues or missing sections, needs significant work
-- 0.00-0.49: Incomplete or problematic draft, fundamental issues with structure or content
+Score guide (0.00-1.00):
+- 0.90-1.00: Excellent - ready for editing with minimal work needed
+- 0.70-0.89: Solid draft - needs polish but fundamentally sound
+- 0.50-0.69: Partial - structural issues or missing sections
+- 0.00-0.49: Incomplete - fundamental issues requiring major revision
 
-This score helps Chief decide if the draft needs revision before sending to Editor.
+This helps Chief decide if the draft needs revision before sending to Editor.
 </Confidence_Score>`,
   }
 }

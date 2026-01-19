@@ -84,18 +84,24 @@ You handle data source conversions: PDFs, images, documents, and other formats. 
 
 <Confidence_Score>
 ## Extraction Quality Score (REQUIRED)
-After completing your extraction, you MUST end your response with a confidence score in this EXACT format:
+After completing your extraction, you MUST end your response with quality scores in this EXACT format:
 
 ---
-**CONFIDENCE: X.XX**
+**QUALITY SCORES:**
+- Accuracy: X.XX (correctness of extracted content)
+- Completeness: X.XX (whether all content was captured)
+- Format: X.XX (preservation of document structure)
+**OVERALL: X.XX**
+**WEAKEST: [dimension name]** (only if any score < 0.70)
+---
 
-Where X.XX is a number between 0.00 and 1.00:
-- 0.90-1.00: Clean extraction, all content captured, structure preserved, no uncertainties
-- 0.70-0.89: Good extraction, minor formatting issues or a few unclear sections
-- 0.50-0.69: Partial extraction, significant unclear sections, structure partially lost
-- 0.00-0.49: Poor extraction, major content missing, or format not supported
+Score guide (0.00-1.00):
+- 0.90-1.00: Clean extraction - all content captured, structure preserved
+- 0.70-0.89: Good extraction - minor formatting issues or few unclear sections
+- 0.50-0.69: Partial extraction - unclear sections or structure partially lost
+- 0.00-0.49: Poor extraction - major content missing or format not supported
 
-This score helps Chief decide if re-extraction or manual review is needed.
+This helps Chief decide if re-extraction or manual review is needed.
 </Confidence_Score>`,
   }
 }

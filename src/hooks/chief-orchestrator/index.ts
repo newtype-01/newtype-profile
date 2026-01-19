@@ -14,6 +14,8 @@ import type { BackgroundManager } from "../../features/background-agent"
 import { summarizeOutput, formatSummarizedOutput } from "./output-summarizer"
 import { getTrackerForSession, clearTrackerForSession } from "./task-progress-tracker"
 import { analyzeAgentOutput, hasConfidenceScore, detectAgentType, clearRewriteAttempts } from "./confidence-router"
+import { parseQualityScores, buildImprovementDirective, hasQualityScores } from "./quality-dimensions"
+import type { AgentType } from "./quality-dimensions"
 
 export const HOOK_NAME = "chief-orchestrator"
 
@@ -704,19 +706,30 @@ ${buildOrchestratorReminder(boulderState.plan_name, progress, subagentSessionId)
           const formattedSummary = formatSummarizedOutput(summarized)
 
           let confidenceDirective = ""
-          if (hasConfidenceScore(output.output)) {
-            const agentType = detectAgentType(output.output, category)
-            if (agentType) {
-              const confidenceResult = analyzeAgentOutput(output.output, subagentSessionId, agentType)
-              if (confidenceResult.directive) {
-                confidenceDirective = `\n\n---\n${confidenceResult.directive}\n---`
-                log(`[${HOOK_NAME}] Confidence routing detected`, {
-                  sessionID: input.sessionID,
-                  agentType,
-                  confidence: confidenceResult.confidence,
-                  recommendation: confidenceResult.recommendation,
-                })
-              }
+          const agentType = detectAgentType(output.output, category) as AgentType | null
+          
+          if (agentType && hasQualityScores(output.output)) {
+            const qualityAssessment = parseQualityScores(output.output, agentType)
+            if (qualityAssessment) {
+              confidenceDirective = `\n\n---\n${buildImprovementDirective(qualityAssessment, subagentSessionId)}\n---`
+              log(`[${HOOK_NAME}] Multi-dimensional quality routing`, {
+                sessionID: input.sessionID,
+                agentType,
+                overall: qualityAssessment.overall,
+                weakest: qualityAssessment.weakest?.name,
+                allPass: qualityAssessment.allPass,
+              })
+            }
+          } else if (hasConfidenceScore(output.output) && agentType) {
+            const confidenceResult = analyzeAgentOutput(output.output, subagentSessionId, agentType)
+            if (confidenceResult.directive) {
+              confidenceDirective = `\n\n---\n${confidenceResult.directive}\n---`
+              log(`[${HOOK_NAME}] Legacy confidence routing`, {
+                sessionID: input.sessionID,
+                agentType,
+                confidence: confidenceResult.confidence,
+                recommendation: confidenceResult.recommendation,
+              })
             }
           }
 
