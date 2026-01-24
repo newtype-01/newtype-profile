@@ -10,11 +10,16 @@ import { resolveMultipleSkills } from "../../features/opencode-skill-loader/skil
 import { createBuiltinSkills } from "../../features/builtin-skills/skills"
 import { getTaskToastManager } from "../../features/task-toast-manager"
 import { subagentSessions } from "../../features/claude-code-session-state"
+import { analyzeQualityForRetry, formatFinalOutput, MAX_REWRITE_ATTEMPTS } from "./quality-feedback"
+import { log } from "../../shared/logger"
 
 type OpencodeClient = PluginInput["client"]
 
 const DEPUTY_AGENT = "deputy"
 const CATEGORY_EXAMPLES = Object.keys(DEFAULT_CATEGORIES).map(k => `'${k}'`).join(", ")
+const POLL_INTERVAL_MS = 500
+const MAX_POLL_TIME_MS = 10 * 60 * 1000
+const LOG_PREFIX = "[chief-task]"
 
 function parseModelString(model: string): { providerID: string; modelID: string } | undefined {
   const parts = model.split("/")
@@ -55,6 +60,49 @@ type ToolContextWithMetadata = {
   agent: string
   abort: AbortSignal
   metadata?: (input: { title?: string; metadata?: Record<string, unknown> }) => void
+}
+
+async function waitForSessionIdle(client: OpencodeClient, sessionID: string): Promise<void> {
+  const pollStart = Date.now()
+  while (Date.now() - pollStart < MAX_POLL_TIME_MS) {
+    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS))
+    const statusResult = await client.session.status()
+    const allStatuses = (statusResult.data ?? {}) as Record<string, { type: string }>
+    const sessionStatus = allStatuses[sessionID]
+    if (!sessionStatus || sessionStatus.type === "idle") {
+      break
+    }
+  }
+}
+
+type SessionMessage = {
+  info?: { role?: string; time?: { created?: number } }
+  parts?: Array<{ type?: string; text?: string }>
+}
+
+async function getLatestAssistantMessage(
+  client: OpencodeClient,
+  sessionID: string
+): Promise<{ text: string; error?: string }> {
+  const messagesResult = await client.session.messages({ path: { id: sessionID } })
+
+  if (messagesResult.error) {
+    return { text: "", error: String(messagesResult.error) }
+  }
+
+  const messages = ((messagesResult as { data?: unknown }).data ?? messagesResult) as SessionMessage[]
+  const assistantMessages = messages
+    .filter((m) => m.info?.role === "assistant")
+    .sort((a, b) => (b.info?.time?.created ?? 0) - (a.info?.time?.created ?? 0))
+  const lastMessage = assistantMessages[0]
+
+  if (!lastMessage) {
+    return { text: "", error: "No assistant response found" }
+  }
+
+  const textParts = lastMessage?.parts?.filter((p) => p.type === "text") ?? []
+  const textContent = textParts.map((p) => p.text ?? "").filter(Boolean).join("\n")
+  return { text: textContent }
 }
 
 function resolveCategoryConfig(
@@ -424,49 +472,74 @@ System notifies on completion. Use \`background_output\` with task_id="${task.id
           return `❌ Failed to send prompt: ${errorMessage}\n\nSession ID: ${sessionID}`
         }
 
-        // Poll for session completion
-        const POLL_INTERVAL_MS = 500
-        const MAX_POLL_TIME_MS = 10 * 60 * 1000
-        const pollStart = Date.now()
+        await waitForSessionIdle(client, sessionID)
 
-        while (Date.now() - pollStart < MAX_POLL_TIME_MS) {
-          await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS))
+        let messageResult = await getLatestAssistantMessage(client, sessionID)
+        if (messageResult.error) {
+          if (toastManager && taskId !== undefined) {
+            toastManager.removeTask(taskId)
+          }
+          return `❌ Error fetching result: ${messageResult.error}\n\nSession ID: ${sessionID}`
+        }
 
-          const statusResult = await client.session.status()
-          const allStatuses = (statusResult.data ?? {}) as Record<string, { type: string }>
-          const sessionStatus = allStatuses[sessionID]
+        let textContent = messageResult.text
+        let attemptNumber = 1
 
-          // Break if session is idle OR no longer in status (completed and removed)
-          if (!sessionStatus || sessionStatus.type === "idle") {
+        let qualityResult = analyzeQualityForRetry(
+          textContent,
+          attemptNumber,
+          args.category,
+          agentToUse
+        )
+
+        while (qualityResult.shouldRetry && attemptNumber < MAX_REWRITE_ATTEMPTS) {
+          attemptNumber++
+          log(`${LOG_PREFIX} Quality check failed, retry ${attemptNumber}/${MAX_REWRITE_ATTEMPTS}`, {
+            sessionID,
+            status: qualityResult.status,
+            overall: qualityResult.assessment?.overall,
+          })
+
+          let retryError: Error | undefined
+          await client.session.promptAsync({
+            path: { id: sessionID },
+            body: {
+              agent: agentToUse,
+              model: categoryModel,
+              system: systemContent,
+              tools: {
+                task: false,
+                chief_task: false,
+              },
+              parts: [{ type: "text", text: qualityResult.improvementPrompt! }],
+            },
+          }).catch((error) => {
+            retryError = error instanceof Error ? error : new Error(String(error))
+          })
+
+          if (retryError) {
+            log(`${LOG_PREFIX} Retry prompt failed`, { sessionID, error: retryError.message })
             break
           }
+
+          await waitForSessionIdle(client, sessionID)
+
+          messageResult = await getLatestAssistantMessage(client, sessionID)
+          if (messageResult.error) {
+            log(`${LOG_PREFIX} Retry fetch failed`, { sessionID, error: messageResult.error })
+            break
+          }
+
+          textContent = messageResult.text
+          qualityResult = analyzeQualityForRetry(
+            textContent,
+            attemptNumber,
+            args.category,
+            agentToUse
+          )
         }
 
-        const messagesResult = await client.session.messages({
-          path: { id: sessionID },
-        })
-
-        if (messagesResult.error) {
-          return `❌ Error fetching result: ${messagesResult.error}\n\nSession ID: ${sessionID}`
-        }
-
-        const messages = ((messagesResult as { data?: unknown }).data ?? messagesResult) as Array<{
-          info?: { role?: string; time?: { created?: number } }
-          parts?: Array<{ type?: string; text?: string }>
-        }>
-
-        const assistantMessages = messages
-          .filter((m) => m.info?.role === "assistant")
-          .sort((a, b) => (b.info?.time?.created ?? 0) - (a.info?.time?.created ?? 0))
-        const lastMessage = assistantMessages[0]
-        
-        if (!lastMessage) {
-          return `❌ No assistant response found.\n\nSession ID: ${sessionID}`
-        }
-        
-        const textParts = lastMessage?.parts?.filter((p) => p.type === "text") ?? []
-        const textContent = textParts.map((p) => p.text ?? "").filter(Boolean).join("\n")
-
+        const finalOutput = formatFinalOutput(qualityResult, sessionID)
         const duration = formatDuration(startTime)
 
         if (toastManager) {
@@ -475,14 +548,15 @@ System notifies on completion. Use \`background_output\` with task_id="${task.id
 
         subagentSessions.delete(sessionID)
 
-        return `Task completed in ${duration}.
+        const retryInfo = attemptNumber > 1 ? ` (${attemptNumber} attempts)` : ""
+        return `Task completed in ${duration}${retryInfo}.
 
 Agent: ${agentToUse}${args.category ? ` (category: ${args.category})` : ""}
 Session ID: ${sessionID}
 
 ---
 
-${textContent || "(No text output)"}`
+${finalOutput || "(No text output)"}`
       } catch (error) {
         if (toastManager && taskId !== undefined) {
           toastManager.removeTask(taskId)
