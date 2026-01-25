@@ -270,6 +270,20 @@ This project retains core capabilities from oh-my-opencode:
 - ✅ **AST-Grep**: Code pattern search
 - ✅ **MCP Support**: Extended capabilities
 
+## Switch Between Plugins
+
+Use the `/switch` command to switch between OpenCode plugins:
+
+```
+/switch newtype    # Switch to newtype-profile
+/switch omo        # Switch to oh-my-opencode
+/switch none       # Disable all plugins
+```
+
+**Note**: After switching, you need to restart OpenCode (Ctrl+C, then `opencode`).
+
+The first time you use `/switch`, it automatically installs itself to `~/.config/opencode/command/switch.md`. This means the command remains available even after switching to other plugins (like oh-my-opencode), allowing you to switch back anytime.
+
 ## Differences from oh-my-opencode
 
 | Aspect | oh-my-opencode | newtype-profile |

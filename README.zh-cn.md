@@ -270,6 +270,20 @@ Chief 使用 `chief_task` 按分类委派任务：
 - ✅ **AST-Grep**: 代码模式搜索
 - ✅ **MCP 支持**: 扩展能力
 
+## 插件切换
+
+使用 `/switch` 命令在 OpenCode 插件之间切换：
+
+```
+/switch newtype    # 切换到 newtype-profile
+/switch omo        # 切换到 oh-my-opencode
+/switch none       # 禁用所有插件
+```
+
+**注意**：切换后需要重启 OpenCode（Ctrl+C，然后运行 `opencode`）。
+
+首次使用 `/switch` 时，命令会自动安装到 `~/.config/opencode/command/switch.md`。这意味着即使切换到其他插件（如 oh-my-opencode），该命令仍然可用，随时可以切换回来。
+
 ## 与 oh-my-opencode 的区别
 
 | 方面 | oh-my-opencode | newtype-profile |
