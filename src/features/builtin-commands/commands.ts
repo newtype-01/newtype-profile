@@ -40,6 +40,19 @@ ${SWITCH_PLUGIN_TEMPLATE}
 </command-instruction>`,
     argumentHint: "<newtype|omo|none>",
   },
+  "super-analyst": {
+    description: "(builtin) Elite analytical consulting system with 12 professional frameworks",
+    template: `<command-instruction>
+Use the skill tool to load the super-analyst skill, then follow its instructions.
+
+Call: skill({ name: "super-analyst" })
+</command-instruction>
+
+<user-request>
+$ARGUMENTS
+</user-request>`,
+    argumentHint: "<analysis question or problem>",
+  },
 }
 
 export function loadBuiltinCommands(

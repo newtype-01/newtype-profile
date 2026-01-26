@@ -1,6 +1,6 @@
 import type { CommandDefinition } from "../claude-code-command-loader"
 
-export type BuiltinCommandName = "init-deep" | "ralph-loop" | "cancel-ralph" | "switch"
+export type BuiltinCommandName = "init-deep" | "ralph-loop" | "cancel-ralph" | "switch" | "super-analyst"
 
 export interface BuiltinCommandConfig {
   disabled_commands?: BuiltinCommandName[]
