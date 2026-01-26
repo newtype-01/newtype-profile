@@ -258,6 +258,30 @@ To disable a built-in MCP:
 }
 ```
 
+### Built-in Skills
+
+The plugin includes specialized skills that can be invoked via `/skill <name>`:
+
+| Skill | Description |
+|-------|-------------|
+| **playwright** | Browser automation via Playwright MCP - web scraping, testing, screenshots |
+| **super-analyst** | Elite analytical consulting system with 12 professional frameworks (First Principles, SWOT, Porter's Five Forces, 5 Whys, MECE, etc.), deep thinking via Sequential Thinking MCP, and comprehensive web research |
+
+**Super Analyst Features:**
+- 7-stage systematic workflow (Problem Understanding → Intelligence Planning → Gathering → Framework Selection → Analysis → Output)
+- 12 professional analysis frameworks with detailed prompts
+- Automatic complexity detection (Level 1/2/3)
+- Bilingual search strategy (Chinese/English)
+- Sequential Thinking integration for deep reasoning
+
+To disable a built-in skill:
+
+```json
+{
+  "disabled_skills": ["super-analyst"]
+}
+```
+
 ## Features Inherited from oh-my-opencode
 
 This project retains core capabilities from oh-my-opencode:

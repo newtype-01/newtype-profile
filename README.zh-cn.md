@@ -258,6 +258,30 @@ Chief 使用 `chief_task` 按分类委派任务：
 }
 ```
 
+### 内置 Skills
+
+插件内置了专业技能，可通过 `/skill <name>` 调用：
+
+| 技能 | 说明 |
+|------|------|
+| **playwright** | 通过 Playwright MCP 进行浏览器自动化 - 网页抓取、测试、截图 |
+| **super-analyst** | 精英分析咨询系统，包含12个专业分析框架（第一性原理、SWOT、波特五力、5 Whys、MECE等），通过 Sequential Thinking MCP 进行深度思考，支持全面的网络调研 |
+
+**Super Analyst 功能特性：**
+- 7阶段系统化工作流（问题理解 → 情报规划 → 情报收集 → 框架选择 → 结构化分析 → 整合输出）
+- 12个专业分析框架，每个框架都有详细的分析提示词
+- 自动复杂度检测（Level 1/2/3）
+- 中英双语搜索策略
+- Sequential Thinking 深度思考集成
+
+禁用内置 Skill：
+
+```json
+{
+  "disabled_skills": ["super-analyst"]
+}
+```
+
 ## 继承自 oh-my-opencode 的功能
 
 本项目保留了 oh-my-opencode 的核心能力：
