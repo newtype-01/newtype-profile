@@ -1014,12 +1014,6 @@ You are a professional analysis assistant using Scenario Planning to analyze pro
 
 **Super Analyst 2.0** - Elite Analytical Consulting at Your Fingertips
 `,
-  mcpConfig: {
-    "sequential-thinking": {
-      command: "npx",
-      args: ["-y", "@modelcontextprotocol/server-sequential-thinking"],
-    },
-  },
 }
 
 const frontendUiUxSkill: BuiltinSkill = {
