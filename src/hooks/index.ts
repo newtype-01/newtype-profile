@@ -29,3 +29,4 @@ export { createPrometheusMdOnlyHook } from "./prometheus-md-only";
 export { createTaskResumeInfoHook } from "./task-resume-info";
 
 export { createChiefOrchestratorHook } from "./chief-orchestrator";
+export { createMemorySystemHook } from "./memory-system";

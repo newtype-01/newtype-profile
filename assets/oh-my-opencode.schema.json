@@ -75,7 +75,8 @@
           "auto-slash-command",
           "edit-error-recovery",
           "prometheus-md-only",
-          "chief-orchestrator"
+          "chief-orchestrator",
+          "memory-system"
         ]
       }
     },

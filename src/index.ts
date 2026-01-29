@@ -29,6 +29,7 @@ import {
   createTaskResumeInfoHook,
   createChiefOrchestratorHook,
   createPrometheusMdOnlyHook,
+  createMemorySystemHook,
 } from "./hooks";
 import { setConfidenceConfig } from "./hooks/chief-orchestrator/confidence-router";
 import {
@@ -205,6 +206,10 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
 
   const prometheusMdOnly = isHookEnabled("prometheus-md-only")
     ? createPrometheusMdOnlyHook(ctx)
+    : null;
+
+  const memorySystem = isHookEnabled("memory-system")
+    ? createMemorySystemHook(ctx)
     : null;
 
   const taskResumeInfo = createTaskResumeInfoHook();
@@ -403,6 +408,7 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
       await interactiveBashSession?.event(input);
       await ralphLoop?.event(input);
       await chiefOrchestrator?.handler(input);
+      await memorySystem?.event(input);
 
       const { event } = input;
       const props = event.properties as Record<string, unknown> | undefined;

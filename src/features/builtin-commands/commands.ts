@@ -3,6 +3,7 @@ import type { BuiltinCommandName, BuiltinCommands } from "./types"
 import { INIT_DEEP_TEMPLATE } from "./templates/init-deep"
 import { RALPH_LOOP_TEMPLATE, CANCEL_RALPH_TEMPLATE } from "./templates/ralph-loop"
 import { SWITCH_PLUGIN_TEMPLATE } from "./templates/switch-plugin"
+import { MEMORY_CONSOLIDATE_TEMPLATE } from "./templates/memory-consolidate"
 
 const BUILTIN_COMMAND_DEFINITIONS: Record<BuiltinCommandName, Omit<CommandDefinition, "name">> = {
   "init-deep": {
@@ -65,6 +66,12 @@ Call: skill({ name: "super-writer" })
 $ARGUMENTS
 </user-request>`,
     argumentHint: "<content creation request>",
+  },
+  "memory-consolidate": {
+    description: "(builtin) Consolidate daily memory logs into MEMORY.md",
+    template: `<command-instruction>
+${MEMORY_CONSOLIDATE_TEMPLATE}
+</command-instruction>`,
   },
 }
 
