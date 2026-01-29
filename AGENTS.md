@@ -185,10 +185,11 @@ npm publish --access public --otp=<code>
 git push origin main --follow-tags
 ```
 
-## RECENT CHANGES (v1.0.22 - v1.0.28)
+## RECENT CHANGES (v1.0.22 - v1.0.29)
 
 | Version | Change |
 |---------|--------|
+| v1.0.29 | Fix Deputy not executing file edits — add explicit direct execution guidance to prompt |
 | v1.0.28 | Remove confrontational `SINGLE_TASK_DIRECTIVE` from hooks |
 | v1.0.27 | Add forbidden phrases to Deputy prompt |
 | v1.0.26 | Chief uses whitelist (not blocklist) for tool restrictions |
