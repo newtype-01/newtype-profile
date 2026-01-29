@@ -322,6 +322,40 @@ This project retains core capabilities from oh-my-opencode:
 - ✅ **AST-Grep**: Code pattern search
 - ✅ **MCP Support**: Extended capabilities
 
+## Memory System (v1.0.41+)
+
+newtype-profile includes an automatic memory system for cross-session knowledge persistence:
+
+### How It Works
+
+1. **Auto-save**: When a conversation ends (session.idle), key information is extracted and saved to `.opencode/memory/YYYY-MM-DD.md`
+2. **Auto-archive**: Logs older than 7 days are automatically consolidated into `.opencode/MEMORY.md`
+3. **AI Awareness**: Chief knows about the memory system and can query it when needed
+
+### File Structure
+
+```
+your-project/
+└── .opencode/
+    ├── MEMORY.md              # Long-term memory (archived)
+    └── memory/
+        ├── 2026-01-29.md      # Today's conversation log
+        ├── 2026-01-28.md      # Yesterday's log
+        └── ...
+```
+
+### Manual Consolidation
+
+Use `/memory-consolidate` to manually trigger memory consolidation (normally automatic).
+
+### Disable Memory System
+
+```json
+{
+  "disabled_hooks": ["memory-system"]
+}
+```
+
 ## Switch Between Plugins
 
 Use the `/switch` command to switch between OpenCode plugins:

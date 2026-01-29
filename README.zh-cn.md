@@ -322,6 +322,40 @@ Chief 使用 `chief_task` 按分类委派任务：
 - ✅ **AST-Grep**: 代码模式搜索
 - ✅ **MCP 支持**: 扩展能力
 
+## 记忆系统 (v1.0.41+)
+
+newtype-profile 内置了跨会话记忆系统，自动保存重要信息：
+
+### 工作原理
+
+1. **自动保存**：对话结束时（session.idle），关键信息被提取并保存到 `.opencode/memory/YYYY-MM-DD.md`
+2. **自动归档**：超过 7 天的日志自动合并到 `.opencode/MEMORY.md`
+3. **AI 感知**：Chief 知道记忆系统的存在，需要时会主动查询
+
+### 文件结构
+
+```
+你的项目/
+└── .opencode/
+    ├── MEMORY.md              # 长期记忆（归档后）
+    └── memory/
+        ├── 2026-01-29.md      # 今天的对话记录
+        ├── 2026-01-28.md      # 昨天的记录
+        └── ...
+```
+
+### 手动整理
+
+使用 `/memory-consolidate` 手动触发记忆整理（通常自动完成）。
+
+### 禁用记忆系统
+
+```json
+{
+  "disabled_hooks": ["memory-system"]
+}
+```
+
 ## 插件切换
 
 使用 `/switch` 命令在 OpenCode 插件之间切换：
