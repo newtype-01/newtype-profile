@@ -1,6 +1,6 @@
 {
   "name": "newtype-profile",
-  "version": "1.0.43",
+  "version": "1.0.44",
   "description": "AI Agent Collaboration System for Content Creation - Based on oh-my-opencode",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
