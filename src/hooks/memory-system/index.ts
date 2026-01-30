@@ -1,6 +1,12 @@
 import type { PluginInput } from "@opencode-ai/plugin"
-import { HOOK_NAME, MIN_MESSAGES_TO_SAVE, SAVE_GRACE_PERIOD_MS } from "./constants"
-import { appendMemoryEntry, hasMemoryForSession, checkArchiveNeeded, archiveOldMemories } from "./storage"
+import { HOOK_NAME, SAVE_GRACE_PERIOD_MS } from "./constants"
+import {
+  appendMemoryEntry,
+  hasMemoryForSession,
+  checkArchiveNeeded,
+  archiveOldMemories,
+  saveFullTranscript,
+} from "./storage"
 import { extractSessionSummary } from "./extractor"
 import { log } from "../../shared/logger"
 import { getMainSessionID, subagentSessions } from "../../features/claude-code-session-state"
@@ -24,6 +30,31 @@ interface MessageInfo {
 interface MessageWrapper {
   info: MessageInfo
   parts: MessagePart[]
+}
+
+interface FullTranscriptMessage {
+  role: string
+  text: string
+  timestamp?: string
+}
+
+function extractMessageText(parts: MessagePart[]): string {
+  return parts
+    .filter((p) => p.type === "text" && p.text)
+    .map((p) => p.text!)
+    .join("\n")
+}
+
+function extractFullTranscript(messages: MessageWrapper[]): FullTranscriptMessage[] {
+  return messages
+    .map((message) => {
+      const text = extractMessageText(message.parts)
+      return {
+        role: message.info.role,
+        text,
+      }
+    })
+    .filter((message) => message.text.trim().length > 0)
 }
 
 interface ArchiveState {
@@ -135,19 +166,12 @@ export function createMemorySystemHook(ctx: PluginInput) {
 
       const messages = (resp.data ?? resp) as MessageWrapper[]
 
-      if (messages.length < MIN_MESSAGES_TO_SAVE) {
-        log(`[${HOOK_NAME}] Too few messages`, {
-          sessionID,
-          count: messages.length,
-          threshold: MIN_MESSAGES_TO_SAVE,
-        })
-        return
-      }
-
       const entry = extractSessionSummary(sessionID, messages)
+      const fullTranscript = extractFullTranscript(messages)
       const success = appendMemoryEntry(ctx.directory, entry)
+      const fullSuccess = saveFullTranscript(ctx.directory, sessionID, fullTranscript)
 
-      if (success) {
+      if (success && fullSuccess) {
         state.saved = true
         log(`[${HOOK_NAME}] Memory saved`, {
           sessionID,
@@ -157,7 +181,11 @@ export function createMemorySystemHook(ctx: PluginInput) {
 
         await checkAndArchive()
       } else {
-        log(`[${HOOK_NAME}] Failed to save memory`, { sessionID })
+        log(`[${HOOK_NAME}] Failed to save memory`, {
+          sessionID,
+          summarySaved: success,
+          fullSaved: fullSuccess,
+        })
       }
     } catch (err) {
       log(`[${HOOK_NAME}] Error saving memory`, { sessionID, error: String(err) })

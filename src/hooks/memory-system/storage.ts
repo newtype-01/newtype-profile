@@ -1,10 +1,32 @@
-import { existsSync, mkdirSync, appendFileSync, readFileSync, readdirSync, unlinkSync } from "node:fs"
+import {
+  existsSync,
+  mkdirSync,
+  appendFileSync,
+  readFileSync,
+  readdirSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs"
 import { join } from "node:path"
-import { MEMORY_DIR, MEMORY_FILE, MAX_SUMMARY_LENGTH, ARCHIVE_AFTER_DAYS } from "./constants"
-import type { MemoryEntry } from "./types"
+import {
+  MEMORY_DIR,
+  MEMORY_FILE,
+  MAX_SUMMARY_LENGTH,
+  ARCHIVE_AFTER_DAYS,
+  FULL_MEMORY_DIR,
+} from "./constants"
+import type { MemoryEntry, MemoryEntryMessage } from "./types"
 
 function ensureMemoryDir(projectDir: string): string {
   const memoryPath = join(projectDir, MEMORY_DIR)
+  if (!existsSync(memoryPath)) {
+    mkdirSync(memoryPath, { recursive: true })
+  }
+  return memoryPath
+}
+
+function ensureFullMemoryDir(projectDir: string): string {
+  const memoryPath = join(projectDir, FULL_MEMORY_DIR)
   if (!existsSync(memoryPath)) {
     mkdirSync(memoryPath, { recursive: true })
   }
@@ -176,6 +198,41 @@ export function hasMemoryForSession(projectDir: string, sessionID: string): bool
 
     const content = readFileSync(filePath, "utf-8")
     return content.includes(`Session: ${sessionID.slice(0, 12)}`)
+  } catch {
+    return false
+  }
+}
+
+export function saveFullTranscript(
+  projectDir: string,
+  sessionID: string,
+  messages: MemoryEntryMessage[]
+): boolean {
+  try {
+    const memoryDir = ensureFullMemoryDir(projectDir)
+    const safeSessionID = sessionID.replace(/[^a-zA-Z0-9_-]/g, "_")
+    const filePath = join(memoryDir, `${safeSessionID}.md`)
+
+    const sections: string[] = [
+      `# Full Transcript - ${sessionID}`,
+      `Generated: ${new Date().toISOString()}`,
+      "",
+    ]
+
+    for (const message of messages) {
+      const timestamp = message.timestamp ? ` (${message.timestamp})` : ""
+      sections.push(
+        `## ${message.role.toUpperCase()}${timestamp}`,
+        "",
+        message.text || "",
+        "",
+        "---",
+        ""
+      )
+    }
+
+    writeFileSync(filePath, sections.join("\n"))
+    return true
   } catch {
     return false
   }

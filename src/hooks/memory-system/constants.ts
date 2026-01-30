@@ -1,10 +1,11 @@
 export const HOOK_NAME = "memory-system"
 
-/** Minimum number of messages to trigger memory save */
-export const MIN_MESSAGES_TO_SAVE = 4
 
 /** Memory storage directory relative to project root */
 export const MEMORY_DIR = ".opencode/memory"
+
+/** Full transcript storage directory relative to project root */
+export const FULL_MEMORY_DIR = ".opencode/memory/full"
 
 /** Long-term memory file */
 export const MEMORY_FILE = ".opencode/MEMORY.md"

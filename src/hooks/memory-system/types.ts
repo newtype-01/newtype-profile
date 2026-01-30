@@ -7,6 +7,12 @@ export interface MemoryEntry {
   todos?: string[]
 }
 
+export interface MemoryEntryMessage {
+  role: string
+  text: string
+  timestamp?: string
+}
+
 export interface SessionState {
   saved: boolean
   saveTimer?: ReturnType<typeof setTimeout>
