@@ -451,10 +451,6 @@ System notifies on completion. Use \`background_output\` with task_id="${task.id
             agent: agentToUse,
             model: categoryModel,
             system: systemContent,
-            tools: {
-              task: false,
-              chief_task: false,
-            },
             parts: [{ type: "text", text: args.prompt }],
           },
         }).catch((error) => {
