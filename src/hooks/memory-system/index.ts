@@ -68,6 +68,46 @@ export function createMemorySystemHook(ctx: PluginInput) {
   const sessionStates = new Map<string, SessionState>()
   const archiveState: ArchiveState = { inProgress: false, lastCheck: 0 }
 
+  async function runArchivistSummary(prompt: string): Promise<string | null> {
+    try {
+      const createResult = await ctx.client.session.create({
+        body: {
+          title: "Memory: Deep Summary",
+        },
+      })
+
+      if (createResult.error) return null
+
+      const sessionID = createResult.data.id
+      subagentSessions.add(sessionID)
+
+      await ctx.client.session.prompt({
+        path: { id: sessionID },
+        body: {
+          agent: "archivist",
+          parts: [{ type: "text", text: prompt }],
+        },
+      })
+
+      const messagesResult = await ctx.client.session.messages({
+        path: { id: sessionID },
+      })
+      const messages = ((messagesResult as { data?: unknown }).data ?? messagesResult) as MessageWrapper[]
+      const assistantMessages = messages.filter((m) => m.info.role === "assistant")
+      const last = assistantMessages[assistantMessages.length - 1]
+
+      const text = last?.parts
+        .filter((p) => p.type === "text" && p.text)
+        .map((p) => p.text)
+        .join("\n")
+        .trim()
+
+      return text || null
+    } catch {
+      return null
+    }
+  }
+
   function getOrCreateState(sessionID: string): SessionState {
     let state = sessionStates.get(sessionID)
     if (!state) {
@@ -120,7 +160,17 @@ export function createMemorySystemHook(ctx: PluginInput) {
     })
 
     try {
-      const result = archiveOldMemories(ctx.directory)
+      const result = await archiveOldMemories(ctx.directory, {
+        deepSummarizer: async (session, fullContent) => {
+          const prompt = `Summarize the full transcript into long-term memory entries.\n\nRules:\n- Output Markdown only.\n- Use sections only when relevant.\n- Keep each bullet concise (<120 chars).\n- Do NOT include sensitive data or raw conversation.\n- If nothing important, return "".\n\nRequired sections (only if non-empty):\n**User Preferences:**\n- ...\n**Decisions Made:**\n- ...\n**Lessons Learned:**\n- ...\n\nTranscript:\n${fullContent}`
+
+          try {
+            return await runArchivistSummary(prompt)
+          } catch {
+            return null
+          }
+        },
+      })
 
       await ctx.client.tui
         .showToast({

@@ -33,10 +33,17 @@ export function extractSessionSummary(
 ): MemoryEntry {
   const userMessages: string[] = []
   const assistantMessages: string[] = []
+  const tags: string[] = []
 
   for (const msg of messages) {
     const text = extractTextFromParts(msg.parts)
     if (!text.trim()) continue
+
+    const tagMatches = text.matchAll(/#([a-zA-Z][\w-]{1,30})/g)
+    for (const match of tagMatches) {
+      const tag = match[1]?.toLowerCase()
+      if (tag) tags.push(`#${tag}`)
+    }
 
     if (msg.info.role === "user") {
       userMessages.push(truncateText(text, 500))
@@ -103,5 +110,6 @@ export function extractSessionSummary(
     keyPoints: [...new Set(keyPoints)].slice(0, 5),
     decisions: [...new Set(decisions)].slice(0, 3),
     todos: [...new Set(todos)].slice(0, 3),
+    tags: [...new Set(tags)].slice(0, 5),
   }
 }

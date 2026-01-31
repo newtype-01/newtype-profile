@@ -5,6 +5,7 @@ export interface MemoryEntry {
   keyPoints: string[]
   decisions?: string[]
   todos?: string[]
+  tags?: string[]
 }
 
 export interface MemoryEntryMessage {

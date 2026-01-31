@@ -7,6 +7,8 @@ export const MEMORY_CONSOLIDATE_TEMPLATE = `Consolidate daily memory logs into l
 ## WHAT TO DO
 
 Read all files in \`.opencode/memory/\` directory and consolidate important information into \`.opencode/MEMORY.md\`.
+If a daily log entry contains Decisions, TODOs, or critical tags (#project, #preference, #policy, #important),
+also pull the full transcript from \`.opencode/memory/full/<sessionID>.md\` for deeper summarization.
 
 ### Step 1: Read Daily Logs
 
@@ -26,6 +28,9 @@ From the daily logs, identify:
 4. **Recurring Problems** - Issues that came up multiple times and their solutions
 5. **Key Insights** - Valuable learnings worth preserving
 
+If deep-summary trigger conditions are met, read the full transcript for that session and extract additional
+preferences, decisions, and lessons.
+
 ### Step 3: Update MEMORY.md
 
 Read existing \`.opencode/MEMORY.md\` (create if doesn't exist).
@@ -44,6 +49,9 @@ Append new consolidated information using this structure:
 
 ### Lessons Learned
 - [insight or lesson]
+
+### Deep Summaries (when triggered)
+- [sessionID] preference/decision/lesson from full transcript
 
 ---
 \`\`\`

@@ -18,3 +18,6 @@ export const MAX_SUMMARY_LENGTH = 2000
 
 /** Days after which daily logs are auto-archived to MEMORY.md */
 export const ARCHIVE_AFTER_DAYS = 7
+
+/** Tags that trigger deep summary from full transcripts */
+export const DEEP_SUMMARY_TAGS = ["#project", "#preference", "#policy", "#important"] as const
