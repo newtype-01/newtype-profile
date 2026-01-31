@@ -329,18 +329,23 @@ newtype-profile 内置了跨会话记忆系统，自动保存重要信息：
 ### 工作原理
 
 1. **自动保存**：对话结束时（session.idle），关键信息被提取并保存到 `.opencode/memory/YYYY-MM-DD.md`
-2. **自动归档**：超过 7 天的日志自动合并到 `.opencode/MEMORY.md`
-3. **AI 感知**：Chief 知道记忆系统的存在，需要时会主动查询
+2. **完整对话**：每个 session 的全文日志保存到 `.opencode/memory/full/<sessionID>.md`（覆盖写）
+3. **自动归档**：超过 7 天的日志自动合并到 `.opencode/MEMORY.md`
+4. **深度摘要**：当日记含 Decisions/TODOs 或标签（#project/#preference/#policy/#important）时，archivist 会后台读取全文生成深度摘要
+5. **AI 感知**：Chief 知道记忆系统的存在，需要时会主动查询
 
 ### 文件结构
 
 ```
 你的项目/
 └── .opencode/
-    ├── MEMORY.md              # 长期记忆（归档后）
+    ├── MEMORY.md              # 长期记忆（含深度摘要）
     └── memory/
-        ├── 2026-01-29.md      # 今天的对话记录
-        ├── 2026-01-28.md      # 昨天的记录
+        ├── 2026-01-29.md      # 每日摘要
+        ├── 2026-01-28.md      # 每日摘要
+        ├── full/
+        │   ├── ses_xxxx.md    # 每个 session 的完整记录
+        │   └── ...
         └── ...
 ```
 

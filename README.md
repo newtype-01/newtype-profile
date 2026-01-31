@@ -329,18 +329,23 @@ newtype-profile includes an automatic memory system for cross-session knowledge 
 ### How It Works
 
 1. **Auto-save**: When a conversation ends (session.idle), key information is extracted and saved to `.opencode/memory/YYYY-MM-DD.md`
-2. **Auto-archive**: Logs older than 7 days are automatically consolidated into `.opencode/MEMORY.md`
-3. **AI Awareness**: Chief knows about the memory system and can query it when needed
+2. **Full transcript**: A complete conversation log is stored in `.opencode/memory/full/<sessionID>.md` (overwrites per session)
+3. **Auto-archive**: Logs older than 7 days are consolidated into `.opencode/MEMORY.md`
+4. **Deep summaries**: If a daily entry includes Decisions/TODOs or tags (#project/#preference/#policy/#important), the archivist agent summarizes the full transcript in background
+5. **AI Awareness**: Chief knows about the memory system and can query it when needed
 
 ### File Structure
 
 ```
 your-project/
 └── .opencode/
-    ├── MEMORY.md              # Long-term memory (archived)
+    ├── MEMORY.md              # Long-term memory (archived + deep summaries)
     └── memory/
-        ├── 2026-01-29.md      # Today's conversation log
-        ├── 2026-01-28.md      # Yesterday's log
+        ├── 2026-01-29.md      # Daily summaries
+        ├── 2026-01-28.md      # Daily summaries
+        ├── full/
+        │   ├── ses_xxxx.md    # Full transcript per session
+        │   └── ...
         └── ...
 ```
 
