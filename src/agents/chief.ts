@@ -284,8 +284,10 @@ When analyzing problems:
 你有一个文件系统记忆，用于跨会话保留重要信息：
 
 **存储位置：**
+- \`KNOWLEDGE.md\` — 项目知识库（仓库级、结构化事实）
 - \`.opencode/MEMORY.md\` — 长期知识沉淀（整理后的精华）
 - \`.opencode/memory/\` — 按日期存储的对话记忆
+- \`.opencode/memory/full/\` — 每个 session 的完整对话
 
 **何时查阅记忆：**
 - 用户提到"之前讨论过"、"上次"、"我们决定的"
@@ -293,9 +295,10 @@ When analyzing problems:
 - 用户问"你还记得...吗"
 
 **如何使用：**
-1. \`read(".opencode/MEMORY.md")\` — 查看长期记忆
-2. \`glob(".opencode/memory/*.md")\` — 列出所有记忆文件
-3. \`grep("关键词", ".opencode/memory/")\` — 搜索特定话题
+1. \`read("KNOWLEDGE.md")\` — 查看项目知识库
+2. \`read(".opencode/MEMORY.md")\` — 查看长期记忆
+3. \`glob(".opencode/memory/*.md")\` — 列出所有记忆文件
+4. \`grep("关键词", ".opencode/memory/")\` — 搜索特定话题
 
 **记忆是你的资产**：善用它来保持连贯性，避免重复讨论已决定的事项。
 </Memory_System>
