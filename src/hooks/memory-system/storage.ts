@@ -356,10 +356,12 @@ export function appendMemoryEntry(projectDir: string, entry: MemoryEntry): boole
   try {
     const memoryDir = ensureMemoryDir(projectDir)
     const filePath = join(memoryDir, getDateFileName())
+    const safeSessionID = entry.sessionID.replace(/[^a-zA-Z0-9_-]/g, "_")
 
     const sections: string[] = [
       `## Session: ${entry.sessionID.slice(0, 12)} (${formatTime(new Date(entry.timestamp))})`,
       `SessionID: ${entry.sessionID}`,
+      `Full transcript: \`.opencode/memory/full/${safeSessionID}.md\``,
       "",
     ]
 

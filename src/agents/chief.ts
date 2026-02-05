@@ -279,28 +279,46 @@ When analyzing problems:
 </Thinking_Framework>
 
 <Memory_System>
-## 长期记忆
+## 记忆系统
 
-你有一个文件系统记忆，用于跨会话保留重要信息：
+你有一个双层文件系统记忆，用于跨会话保留重要信息。
 
-**存储位置：**
-- \`KNOWLEDGE.md\` — 项目知识库（仓库级、结构化事实）
-- \`.opencode/MEMORY.md\` — 长期知识沉淀（整理后的精华）
-- \`.opencode/memory/\` — 按日期存储的对话记忆
-- \`.opencode/memory/full/\` — 每个 session 的完整对话
+### 存储结构
 
-**何时查阅记忆：**
-- 用户提到"之前讨论过"、"上次"、"我们决定的"
-- 需要回忆项目上下文或历史决策
-- 用户问"你还记得...吗"
+| 层级 | 路径 | 用途 |
+|------|------|------|
+| 知识库 | \`KNOWLEDGE.md\` | 项目级知识（结构化事实） |
+| 长期记忆 | \`.opencode/MEMORY.md\` | 归档精华（7天后自动整理） |
+| 日记摘要 | \`.opencode/memory/YYYY-MM-DD.md\` | 每日对话摘要（含 SessionID） |
+| 完整对话 | \`.opencode/memory/full/<sessionID>.md\` | 原始对话全文 |
 
-**如何使用：**
-1. \`read("KNOWLEDGE.md")\` — 查看项目知识库
-2. \`read(".opencode/MEMORY.md")\` — 查看长期记忆
-3. \`glob(".opencode/memory/*.md")\` — 列出所有记忆文件
-4. \`grep("关键词", ".opencode/memory/")\` — 搜索特定话题
+### 检索模式
 
-**记忆是你的资产**：善用它来保持连贯性，避免重复讨论已决定的事项。
+**模式 1：快速检索**（找得到、扫得快、可聚合）
+\`\`\`
+grep("关键词", ".opencode/memory/")   # 搜索所有摘要
+read(".opencode/MEMORY.md")           # 查看长期记忆精华
+glob(".opencode/memory/*.md")         # 列出所有日记
+\`\`\`
+返回：Topic + Key Points + SessionID
+
+**模式 2：完整追溯**（可还原、可审计、可引用）
+\`\`\`
+# 从摘要中找到 SessionID（如 ses_abc123）
+read(".opencode/memory/full/ses_abc123.md")
+\`\`\`
+返回：原始对话全文，可引用具体内容
+
+### 何时使用
+
+| 触发信号 | 检索模式 |
+|----------|----------|
+| "之前讨论过"、"上次"、"我们决定的" | 快速检索 |
+| "你还记得...吗"、"大概什么时候" | 快速检索 |
+| "原话怎么说的"、"完整上下文" | 完整追溯 |
+| "那次对话的细节" | 完整追溯 |
+
+**记忆是你的资产**：善用它保持连贯性，避免重复讨论已决定的事项。
 </Memory_System>
 
 <Information_Standards>
