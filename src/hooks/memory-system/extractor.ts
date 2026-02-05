@@ -15,7 +15,6 @@ interface MessageWrapper {
   parts: MessagePart[]
 }
 
-/** System instruction patterns to filter out from memory */
 const SYSTEM_INSTRUCTION_PATTERNS = [
   /^\[search-mode\]/i,
   /^\[analyze-mode\]/i,
@@ -27,6 +26,17 @@ const SYSTEM_INSTRUCTION_PATTERNS = [
   /^delegate to deputy/i,
 ]
 
+const SYSTEM_INSTRUCTION_BLOCKS = [
+  /^\[search-mode\][\s\S]*?(?=\n\n|$)/i,
+  /^\[analyze-mode\][\s\S]*?(?=\n\n|$)/i,
+  /^\[write-mode\][\s\S]*?(?=\n\n|$)/i,
+  /^\[edit-mode\][\s\S]*?(?=\n\n|$)/i,
+  /^MAXIMIZE SEARCH EFFORT[\s\S]*?(?=\n\n|$)/i,
+  /^ANALYSIS MODE\.[\s\S]*?(?=\n\n|$)/i,
+  /^<command-instruction>[\s\S]*?<\/command-instruction>\s*/i,
+  /^<user-request>[\s\S]*?<\/user-request>\s*/i,
+]
+
 function extractTextFromParts(parts: MessagePart[]): string {
   return parts
     .filter((p) => p.type === "text" && p.text)
@@ -34,10 +44,47 @@ function extractTextFromParts(parts: MessagePart[]): string {
     .join("\n")
 }
 
-/** Check if a message looks like a system instruction rather than user content */
 function isSystemInstruction(text: string): boolean {
   const trimmed = text.trim()
   return SYSTEM_INSTRUCTION_PATTERNS.some((pattern) => pattern.test(trimmed))
+}
+
+export function stripSystemInstructionPrefix(text: string): string {
+  let result = text.trim()
+  
+  for (const pattern of SYSTEM_INSTRUCTION_BLOCKS) {
+    result = result.replace(pattern, "").trim()
+  }
+  
+  const lines = result.split("\n")
+  const cleanedLines: string[] = []
+  let foundContent = false
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    
+    if (!foundContent) {
+      if (trimmedLine === "" || trimmedLine === "---") {
+        continue
+      }
+      if (SYSTEM_INSTRUCTION_PATTERNS.some((p) => p.test(trimmedLine))) {
+        continue
+      }
+      if (trimmedLine.startsWith("Deputy will dispatch") ||
+          trimmedLine.startsWith("Plus direct tools:") ||
+          trimmedLine.startsWith("NEVER stop at first") ||
+          trimmedLine.startsWith("SYNTHESIZE")) {
+        continue
+      }
+      foundContent = true
+    }
+    
+    if (foundContent) {
+      cleanedLines.push(line)
+    }
+  }
+  
+  return cleanedLines.join("\n").trim()
 }
 
 /** Filter and prepare messages for LLM summarization */

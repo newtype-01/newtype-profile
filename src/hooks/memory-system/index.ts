@@ -13,6 +13,7 @@ import {
   generateSummaryPrompt,
   parseLLMSummary,
   extractSessionSummaryFallback,
+  stripSystemInstructionPrefix,
 } from "./extractor"
 import { log } from "../../shared/logger"
 import { getMainSessionID, subagentSessions } from "../../features/claude-code-session-state"
@@ -54,7 +55,12 @@ function extractMessageText(parts: MessagePart[]): string {
 function extractFullTranscript(messages: MessageWrapper[]): FullTranscriptMessage[] {
   return messages
     .map((message) => {
-      const text = extractMessageText(message.parts)
+      let text = extractMessageText(message.parts)
+      
+      if (message.info.role === "user") {
+        text = stripSystemInstructionPrefix(text)
+      }
+      
       return {
         role: message.info.role,
         text,

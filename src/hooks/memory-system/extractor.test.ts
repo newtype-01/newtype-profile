@@ -5,7 +5,108 @@ import {
   generateSummaryPrompt,
   parseLLMSummary,
   extractSessionSummaryFallback,
+  stripSystemInstructionPrefix,
 } from "./extractor"
+
+describe("stripSystemInstructionPrefix", () => {
+  test("removes [search-mode] block and extracts real question", () => {
+    // #given
+    const text = `[search-mode]
+MAXIMIZE SEARCH EFFORT. Delegate to Deputy for comprehensive search:
+- chief_task(subagent_type="deputy", prompt="Search: [your query]", run_in_background=false, skills=[])
+Deputy will dispatch to researcher (codebase) and archivist (knowledge base) as needed.
+Plus direct tools: Grep, AST-grep for targeted searches.
+NEVER stop at first result - be exhaustive.
+
+你怎么看黄仁勋的这个观点：
+
+[Pasted ~26 l你以为的聪明，很快就要不值钱了。`
+
+    // #when
+    const result = stripSystemInstructionPrefix(text)
+
+    // #then
+    expect(result).not.toContain("[search-mode]")
+    expect(result).not.toContain("MAXIMIZE SEARCH EFFORT")
+    expect(result).toContain("你怎么看黄仁勋的这个观点")
+  })
+
+  test("removes [analyze-mode] block", () => {
+    // #given
+    const text = `[analyze-mode]
+ANALYSIS MODE. Delegate to Deputy for context gathering:
+
+chief_task(subagent_type="deputy", prompt="Analyze: [topic].", run_in_background=false, skills=[])
+
+Deputy will dispatch to:
+- researcher (codebase patterns, implementations)
+- archivist (knowledge base, external docs if needed)
+
+Plus direct tools: Grep, AST-grep, LSP for targeted searches.
+
+SYNTHESIZE Deputy's findings before proceeding.
+
+我的一个预感，AI最终一定会把人类逼到一个角落`
+
+    // #when
+    const result = stripSystemInstructionPrefix(text)
+
+    // #then
+    expect(result).not.toContain("[analyze-mode]")
+    expect(result).not.toContain("ANALYSIS MODE")
+    expect(result).not.toContain("Deputy will dispatch")
+    expect(result).toContain("我的一个预感")
+  })
+
+  test("handles mixed search-mode and analyze-mode", () => {
+    // #given
+    const text = `[search-mode]
+MAXIMIZE SEARCH EFFORT...
+
+[analyze-mode]
+ANALYSIS MODE...
+
+实际的用户问题在这里`
+
+    // #when
+    const result = stripSystemInstructionPrefix(text)
+
+    // #then
+    expect(result).toBe("实际的用户问题在这里")
+  })
+
+  test("preserves normal text without system instructions", () => {
+    // #given
+    const text = "这是一个正常的用户问题，没有系统指令"
+
+    // #when
+    const result = stripSystemInstructionPrefix(text)
+
+    // #then
+    expect(result).toBe("这是一个正常的用户问题，没有系统指令")
+  })
+
+  test("removes command-instruction XML blocks", () => {
+    // #given
+    const text = `<command-instruction>
+## Objective
+Analyze all Markdown documents...
+</command-instruction>
+
+<user-request>
+ "/Users/yihe/Dropbox/AI OS/01 - INPUT/2026-0126-0131" 
+</user-request>
+
+实际的用户请求`
+
+    // #when
+    const result = stripSystemInstructionPrefix(text)
+
+    // #then
+    expect(result).not.toContain("<command-instruction>")
+    expect(result).not.toContain("<user-request>")
+  })
+})
 
 describe("prepareMessagesForSummary", () => {
   test("filters out system instruction messages", () => {
