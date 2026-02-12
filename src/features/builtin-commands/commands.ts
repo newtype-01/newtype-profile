@@ -68,6 +68,45 @@ $ARGUMENTS
 </user-request>`,
     argumentHint: "<content creation request>",
   },
+  "super-fact-checker": {
+    description: "(builtin) Systematic verification with source credibility assessment",
+    template: `<command-instruction>
+Use the skill tool to load the super-fact-checker skill, then follow its instructions.
+
+Call: skill({ name: "super-fact-checker" })
+</command-instruction>
+
+<user-request>
+$ARGUMENTS
+</user-request>`,
+    argumentHint: "<content or claims to verify>",
+  },
+  "super-editor": {
+    description: "(builtin) 4-layer editing methodology: structure → paragraph → sentence → word",
+    template: `<command-instruction>
+Use the skill tool to load the super-editor skill, then follow its instructions.
+
+Call: skill({ name: "super-editor" })
+</command-instruction>
+
+<user-request>
+$ARGUMENTS
+</user-request>`,
+    argumentHint: "<content to edit>",
+  },
+  "super-interviewer": {
+    description: "(builtin) Dialogue techniques: open questions, 5 whys, Socratic method",
+    template: `<command-instruction>
+Use the skill tool to load the super-interviewer skill, then follow its instructions.
+
+Call: skill({ name: "super-interviewer" })
+</command-instruction>
+
+<user-request>
+$ARGUMENTS
+</user-request>`,
+    argumentHint: "<topic or question to explore>",
+  },
   "memory-consolidate": {
     description: "(builtin) Consolidate daily memory logs into MEMORY.md",
     template: `<command-instruction>

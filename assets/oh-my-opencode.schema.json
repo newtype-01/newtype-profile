@@ -37,7 +37,10 @@
         "enum": [
           "playwright",
           "super-analyst",
-          "super-writer"
+          "super-writer",
+          "super-fact-checker",
+          "super-editor",
+          "super-interviewer"
         ]
       }
     },
