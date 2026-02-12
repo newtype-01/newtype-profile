@@ -274,33 +274,38 @@ Chief 使用 `chief_task` 按分类委派任务：
 
 ### 内置 Skills
 
-插件内置了专业技能，可通过 `/skill <name>` 或 `/<skill-name>` 调用：
+插件内置了专业技能，Chief 会在需要结构化思考时按需加载：
 
 | 技能 | 命令 | 说明 |
 |------|------|------|
 | **playwright** | `/playwright` | 通过 Playwright MCP 进行浏览器自动化 - 网页抓取、测试、截图 |
-| **super-analyst** | `/super-analyst` | 精英分析咨询系统，包含12个专业分析框架 |
-| **super-writer** | `/super-writer` | 专业内容创作系统，包含6种写作方法论 |
+| **super-analyst** | `/super-analyst` | 专业分析系统，包含12个框架（SWOT、波特五力、第一性原理等） |
+| **super-writer** | `/super-writer` | 内容创作系统，包含6种方法论（W.R.I.T.E、AIDA、叙事框架等） |
 
-**Super Analyst 功能特性：**
-- 7阶段系统化工作流（问题理解 → 情报规划 → 情报收集 → 框架选择 → 结构化分析 → 整合输出）
-- 12个专业分析框架，每个框架都有详细的分析提示词
-- 自动复杂度检测（Level 1/2/3）
-- 中英双语搜索策略
-- Sequential Thinking 深度思考集成
+**Chief 如何使用 Skills：**
 
-**Super Writer 功能特性：**
-- 3阶段精简工作流（理解 → 准备 → 创作）
-- 6种专业写作方法论：
-  - **W.R.I.T.E** - 世界构建、关联性、信息、收获、参与感
-  - **AIDA 模型** - 注意、兴趣、欲望、行动
-  - **内容写作流程** - 研究驱动的结构化内容
-  - **内容创作技巧** - 钩子、故事、报价框架
-  - **高价值内容策略** - 建立权威的内容
-  - **叙事框架** - 故事驱动的互动
-- 可选风格模仿（仅当用户提供参考文本时）
-- 自动复杂度检测（简单/复杂）
-- 每种方法论的质量检查清单
+Chief 在任务需要结构化思考时自动加载技能：
+- "分析竞争对手 X" → Chief 加载 `super-analyst`，用框架指导思考，然后委派 Deputy 去调研
+- "写一篇关于 Y 的文章" → Chief 加载 `super-writer`，选择方法论，然后给 Deputy → Writer 下达结构化指令
+
+Skills 指导 Chief 的思考过程。Chief 把框架消化后，给执行团队精简、可操作的指令。
+
+**Super Analyst (v1.0.53+ 精简版)：**
+- 3层复杂度判断：简单 → 直接回答，中等 → 1个框架，复杂 → 2-3个框架组合
+- 12个框架，每个只有4-5条关键步骤（不是600字的完整提示词）
+- Sequential Thinking 是可选的，不强制
+- 搜索策略：按需搜索，不强制
+
+**Super Writer (v1.0.53+ 精简版)：**
+- 3步工作流：理解需求 → 按需准备 → 创作
+- 6种方法论，每种都有具体步骤：
+  - **W.R.I.T.E**：初稿 → 研究 → 构思 → 定位 → 优化
+  - **AIDA**：吸引注意 → 引发兴趣 → 激发渴望 → 促成行动
+  - **Storytelling**：设定 → 冲突 → 历程 → 高潮 → 结局
+  - **Content Writing Process**：规划 → 研究 → 写作 → 编辑 → 发布
+  - **Content Creation Techniques**：Hook-Story-Offer、Problem-Agitate-Solve 等
+  - **High-Value Content Strategies**：深度长文、原创研究、专家访谈等
+- 风格提取仅在用户明确要求模仿时使用（删除了验证表）
 
 禁用内置 Skill：
 

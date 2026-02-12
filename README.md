@@ -274,33 +274,38 @@ To disable a built-in MCP:
 
 ### Built-in Skills
 
-The plugin includes specialized skills that can be invoked via `/skill <name>` or `/<skill-name>`:
+The plugin includes specialized skills that Chief can load on-demand when tasks need structured frameworks:
 
 | Skill | Command | Description |
 |-------|---------|-------------|
 | **playwright** | `/playwright` | Browser automation via Playwright MCP - web scraping, testing, screenshots |
-| **super-analyst** | `/super-analyst` | Elite analytical consulting system with 12 professional frameworks |
-| **super-writer** | `/super-writer` | Professional content creation with 6 writing methodologies |
+| **super-analyst** | `/super-analyst` | Professional analysis with 12 frameworks (SWOT, Porter's Five Forces, First Principles, etc.) |
+| **super-writer** | `/super-writer` | Content creation with 6 methodologies (W.R.I.T.E, AIDA, Storytelling, etc.) |
 
-**Super Analyst Features:**
-- 7-stage systematic workflow (Problem Understanding → Intelligence Planning → Gathering → Framework Selection → Analysis → Output)
-- 12 professional analysis frameworks with detailed prompts
-- Automatic complexity detection (Level 1/2/3)
-- Bilingual search strategy (Chinese/English)
-- Sequential Thinking integration for deep reasoning
+**How Chief Uses Skills:**
 
-**Super Writer Features:**
-- 3-phase streamlined workflow (UNDERSTAND → PREPARE → CREATE)
-- 6 professional writing methodologies:
-  - **W.R.I.T.E** - World-building, Relevance, Information, Takeaway, Engagement
-  - **AIDA Model** - Attention, Interest, Desire, Action
-  - **Content Writing Process** - Research-driven structured content
-  - **Content Creation Techniques** - Hook, story, offer framework
-  - **High-Value Content Strategies** - Authority-building content
-  - **Storytelling Framework** - Narrative-driven engagement
-- Optional style mimicking (only when user provides reference)
-- Automatic complexity detection (simple/complex)
-- Quality checklists for each methodology
+Chief automatically loads skills when the task requires structured thinking:
+- "Analyze competitor X" → Chief loads `super-analyst`, uses frameworks to guide thinking, then delegates research to Deputy
+- "Write an article about Y" → Chief loads `super-writer`, selects methodology, then gives structured instructions to Deputy → Writer
+
+Skills guide Chief's thinking process. Chief then distills the framework into clear, actionable instructions for the execution team.
+
+**Super Analyst (v1.0.53+ simplified):**
+- 3-tier complexity detection: simple → direct answer, medium → 1 framework, complex → 2-3 frameworks combined
+- 12 frameworks with concise 4-5 step guides (not 600-word prompts)
+- Sequential Thinking is optional, not mandatory
+- Search strategy: on-demand, not forced
+
+**Super Writer (v1.0.53+ simplified):**
+- 3-step workflow: Understand → Prepare (if needed) → Create
+- 6 methodologies with concrete steps:
+  - **W.R.I.T.E**: Write → Research → Ideate → Target → Enhance
+  - **AIDA**: Attention → Interest → Desire → Action
+  - **Storytelling**: Setup → Conflict → Journey → Climax → Resolution
+  - **Content Writing Process**: Planning → Research → Writing → Editing → Publishing
+  - **Content Creation Techniques**: Hook-Story-Offer, Problem-Agitate-Solve, etc.
+  - **High-Value Content Strategies**: Deep articles, original research, expert interviews, etc.
+- Style extraction only when user explicitly requests mimicking (no verification table)
 
 To disable a built-in skill:
 
