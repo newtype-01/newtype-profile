@@ -303,43 +303,16 @@ export function summarizeFullTranscript(content: string): MemorySummary {
   const lessons: string[] = []
 
   for (const block of blocks) {
+    if (block.role !== "user") continue
     const text = block.content
-    const preferencePatterns = [
-      /偏好[：:](.+)/g,
-      /喜欢[：:](.+)/g,
-      /prefer(?:s|red)?[：:](.+)/gi,
-      /preference(?:s)?[：:](.+)/gi,
-    ]
-    for (const pattern of preferencePatterns) {
-      for (const match of text.matchAll(pattern)) {
-        if (match[1]) userPreferences.push(match[1].trim())
-      }
-    }
 
-    const decisionPatterns = [
-      /决定[：:](.+)/g,
-      /决策[：:](.+)/g,
-      /decided?[：:](.+)/gi,
-      /chosen?[：:](.+)/gi,
-      /going with\s+(.+)/gi,
-      /will use\s+(.+)/gi,
-    ]
-    for (const pattern of decisionPatterns) {
-      for (const match of text.matchAll(pattern)) {
-        if (match[1]) decisions.push(match[1].trim())
-      }
-    }
+    const lines = text.split("\n").filter((l) => l.trim().length > 0)
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (trimmed.length < 10 || trimmed.length > 200) continue
 
-    const lessonPatterns = [
-      /结论[：:](.+)/g,
-      /经验[：:](.+)/g,
-      /教训[：:](.+)/g,
-      /lesson(?:s)?[：:](.+)/gi,
-      /insight(?:s)?[：:](.+)/gi,
-    ]
-    for (const pattern of lessonPatterns) {
-      for (const match of text.matchAll(pattern)) {
-        if (match[1]) lessons.push(match[1].trim())
+      if (/^(我(决定|选择|要用|打算)|let'?s go with|decided|going with|will use)/i.test(trimmed)) {
+        decisions.push(trimmed)
       }
     }
   }

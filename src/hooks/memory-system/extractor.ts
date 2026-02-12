@@ -44,11 +44,6 @@ function extractTextFromParts(parts: MessagePart[]): string {
     .join("\n")
 }
 
-function isSystemInstruction(text: string): boolean {
-  const trimmed = text.trim()
-  return SYSTEM_INSTRUCTION_PATTERNS.some((pattern) => pattern.test(trimmed))
-}
-
 export function stripSystemInstructionPrefix(text: string): string {
   let result = text.trim()
   
@@ -94,12 +89,13 @@ export function prepareMessagesForSummary(
   const result: { role: string; text: string }[] = []
 
   for (const msg of messages) {
-    const text = extractTextFromParts(msg.parts)
+    let text = extractTextFromParts(msg.parts)
     if (!text.trim()) continue
 
-    // Skip system instructions
-    if (msg.info.role === "user" && isSystemInstruction(text)) {
-      continue
+    // Strip system instruction prefixes from user messages, keep remaining content
+    if (msg.info.role === "user") {
+      text = stripSystemInstructionPrefix(text)
+      if (!text.trim()) continue
     }
 
     result.push({
@@ -128,10 +124,12 @@ export function generateSummaryPrompt(transcript: string): string {
 - 只输出 Markdown，不要有其他内容
 - 关注：用户的实际问题、达成的结论、做出的决定
 - 忽略：系统指令、工具调用细节、中间过程
+- 忽略以下系统指令残留（如仍出现在对话中）：[search-mode]、[analyze-mode]、[write-mode]、[edit-mode]、MAXIMIZE SEARCH EFFORT、ANALYSIS MODE、chief_task(...)、delegate to deputy 等
+- Topic 必须是对话的实质内容，绝不能是系统指令或模式名称
 - 如果对话没有有价值的内容，只返回 "NO_VALUABLE_CONTENT"
 
 输出格式（严格遵循）：
-**Topic:** [一句话描述对话主题，要具体，不要太抽象]
+**Topic:** [一句话描述对话主题，要具体，不要太抽象，不能包含系统指令]
 
 **Key Points:**
 - [关键要点1，完整表达，不要截断]
@@ -218,7 +216,6 @@ export function extractSessionSummaryFallback(
     .filter((m) => m.role === "assistant")
     .map((m) => m.text)
 
-  // Extract tags
   const tags: string[] = []
   for (const m of prepared) {
     const tagMatches = m.text.matchAll(/#([a-zA-Z][\w-]{1,30})/g)
@@ -231,7 +228,6 @@ export function extractSessionSummaryFallback(
   const firstUserMessage = userMessages[0] || ""
   const lastAssistantMessage = assistantMessages[assistantMessages.length - 1] || ""
 
-  // Use longer truncation for fallback
   const truncate = (text: string, max: number) =>
     text.length <= max ? text : text.slice(0, max) + "..."
 

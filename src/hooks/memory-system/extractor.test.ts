@@ -156,6 +156,47 @@ describe("prepareMessagesForSummary", () => {
     expect(result[0].text).toBe("这个功能的价值是什么？")
   })
 
+  test("strips system instruction prefix but keeps real content in same message", () => {
+    // #given
+    const messages = [
+      {
+        info: { role: "user", id: "1" },
+        parts: [{
+          type: "text",
+          text: `[analyze-mode]
+ANALYSIS MODE. Delegate to Deputy for context gathering:
+
+chief_task(subagent_type="deputy", prompt="Analyze: [topic].", run_in_background=false, skills=[])
+
+Deputy will dispatch to:
+- researcher (codebase patterns, implementations)
+- archivist (knowledge base, external docs if needed)
+
+Plus direct tools: Grep, AST-grep, LSP for targeted searches.
+
+SYNTHESIZE Deputy's findings before proceeding.
+
+我的一个预感，AI最终一定会把人类逼到一个角落`,
+        }],
+      },
+      {
+        info: { role: "assistant", id: "2" },
+        parts: [{ type: "text", text: "这个想法有意思" }],
+      },
+    ]
+
+    // #when
+    const result = prepareMessagesForSummary(messages)
+
+    // #then
+    expect(result).toHaveLength(2)
+    expect(result[0].role).toBe("user")
+    expect(result[0].text).toContain("我的一个预感")
+    expect(result[0].text).not.toContain("[analyze-mode]")
+    expect(result[0].text).not.toContain("ANALYSIS MODE")
+    expect(result[0].text).not.toContain("Deputy will dispatch")
+  })
+
   test("keeps normal user messages", () => {
     // #given
     const messages = [
@@ -235,6 +276,19 @@ describe("generateSummaryPrompt", () => {
     expect(result).toContain("Test message")
     expect(result).toContain("**Topic:**")
     expect(result).toContain("**Key Points:**")
+  })
+
+  test("includes instruction to ignore system instruction residuals", () => {
+    // #given
+    const transcript = "## USER\nSome question"
+
+    // #when
+    const result = generateSummaryPrompt(transcript)
+
+    // #then
+    expect(result).toContain("[analyze-mode]")
+    expect(result).toContain("[search-mode]")
+    expect(result).toContain("不能包含系统指令")
   })
 })
 
