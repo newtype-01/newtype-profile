@@ -279,24 +279,30 @@ Chief 使用 `chief_task` 按分类委派任务：
 | 技能 | 命令 | 说明 |
 |------|------|------|
 | **playwright** | `/playwright` | 通过 Playwright MCP 进行浏览器自动化 - 网页抓取、测试、截图 |
-| **super-analyst** | `/super-analyst` | 专业分析系统，包含12个框架（SWOT、波特五力、第一性原理等） |
-| **super-writer** | `/super-writer` | 内容创作系统，包含6种方法论（W.R.I.T.E、AIDA、叙事框架等） |
+| **super-analyst** | `/super-analyst` | 分析+调研系统，12个框架 + 系统化调研方法论 |
+| **super-writer** | `/super-writer` | 内容创作系统，6种方法论（W.R.I.T.E、AIDA、叙事框架等） |
+| **super-fact-checker** | `/super-fact-checker` | 系统化核查：声明提取、来源可信度、标注体系 |
+| **super-editor** | `/super-editor` | 四层编辑：结构 → 段落 → 句子 → 词语 |
+| **super-interviewer** | `/super-interviewer` | 对话技巧：开放式提问、5 Whys、苏格拉底法 |
 
 **Chief 如何使用 Skills：**
 
 Chief 在任务需要结构化思考时自动加载技能：
 - "分析竞争对手 X" → Chief 加载 `super-analyst`，用框架指导思考，然后委派 Deputy 去调研
 - "写一篇关于 Y 的文章" → Chief 加载 `super-writer`，选择方法论，然后给 Deputy → Writer 下达结构化指令
+- "核查这个数据" → Chief 加载 `super-fact-checker`，应用核查方法论，然后委派 Deputy → Fact-Checker
+- "润色这篇稿子" → Chief 加载 `super-editor`，判断需要哪层编辑，然后委派 Deputy → Editor
+- "帮我理一下思路" → Chief 加载 `super-interviewer`，直接用对话技巧引导（不需要委派）
 
 Skills 指导 Chief 的思考过程。Chief 把框架消化后，给执行团队精简、可操作的指令。
 
-**Super Analyst (v1.0.53+ 精简版)：**
+**Super Analyst (v1.0.56 增强版)：**
 - 3层复杂度判断：简单 → 直接回答，中等 → 1个框架，复杂 → 2-3个框架组合
-- 12个框架，每个只有4-5条关键步骤（不是600字的完整提示词）
+- 12个分析框架，每个4-5条关键步骤
+- **调研方法论**（新增）：信息分层（一手/二手/三手源）、来源可信度评估、三角验证
 - Sequential Thinking 是可选的，不强制
-- 搜索策略：按需搜索，不强制
 
-**Super Writer (v1.0.53+ 精简版)：**
+**Super Writer：**
 - 3步工作流：理解需求 → 按需准备 → 创作
 - 6种方法论，每种都有具体步骤：
   - **W.R.I.T.E**：初稿 → 研究 → 构思 → 定位 → 优化
@@ -305,7 +311,26 @@ Skills 指导 Chief 的思考过程。Chief 把框架消化后，给执行团队
   - **Content Writing Process**：规划 → 研究 → 写作 → 编辑 → 发布
   - **Content Creation Techniques**：Hook-Story-Offer、Problem-Agitate-Solve 等
   - **High-Value Content Strategies**：深度长文、原创研究、专家访谈等
-- 风格提取仅在用户明确要求模仿时使用（删除了验证表）
+
+**Super Fact-Checker (v1.0.56 新增)：**
+- 声明分类：可核查 vs 不可核查
+- 优先级矩阵：影响大 + 可疑度高 → 必须核查
+- 来源可信度层级：官方 > 学术 > 权威媒体 > 普通媒体 > 社交媒体
+- 标注体系：✅ 已验证、⚠️ 部分验证、❓ 无法验证、❌ 有误、🔍 需进一步核查
+
+**Super Editor (v1.0.56 新增)：**
+- 四层编辑方法论（从大到小）：
+  1. 结构层：整体架构、章节顺序、逻辑流程
+  2. 段落层：内聚性、过渡、信息密度
+  3. 句子层：清晰度、节奏、歧义
+  4. 词语层：精准、一致、冗余
+- 每层都有检查清单和常见问题诊断
+
+**Super Interviewer (v1.0.56 新增)：**
+- 提问类型：开放式/封闭式、澄清、追问、挑战、总结
+- 四阶段对话：破冰 → 开放探索 → 深度挖掘 → 总结确认
+- 苏格拉底技巧：概念澄清、假设质疑、后果探索
+- Chief 直接用于与用户对话（不需要委派）
 
 禁用内置 Skill：
 

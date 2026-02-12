@@ -279,24 +279,30 @@ The plugin includes specialized skills that Chief can load on-demand when tasks 
 | Skill | Command | Description |
 |-------|---------|-------------|
 | **playwright** | `/playwright` | Browser automation via Playwright MCP - web scraping, testing, screenshots |
-| **super-analyst** | `/super-analyst` | Professional analysis with 12 frameworks (SWOT, Porter's Five Forces, First Principles, etc.) |
+| **super-analyst** | `/super-analyst` | Analysis + research with 12 frameworks and systematic research methodology |
 | **super-writer** | `/super-writer` | Content creation with 6 methodologies (W.R.I.T.E, AIDA, Storytelling, etc.) |
+| **super-fact-checker** | `/super-fact-checker` | Systematic verification: claim extraction, source credibility, annotation |
+| **super-editor** | `/super-editor` | 4-layer editing: structure → paragraph → sentence → word |
+| **super-interviewer** | `/super-interviewer` | Dialogue techniques: open questions, 5 whys, Socratic method |
 
 **How Chief Uses Skills:**
 
 Chief automatically loads skills when the task requires structured thinking:
 - "Analyze competitor X" → Chief loads `super-analyst`, uses frameworks to guide thinking, then delegates research to Deputy
 - "Write an article about Y" → Chief loads `super-writer`, selects methodology, then gives structured instructions to Deputy → Writer
+- "Verify this data" → Chief loads `super-fact-checker`, applies verification methodology, then delegates to Deputy → Fact-Checker
+- "Polish this draft" → Chief loads `super-editor`, identifies editing layer needed, then delegates to Deputy → Editor
+- "Help me think through this" → Chief loads `super-interviewer` and uses dialogue techniques directly (no delegation)
 
 Skills guide Chief's thinking process. Chief then distills the framework into clear, actionable instructions for the execution team.
 
-**Super Analyst (v1.0.53+ simplified):**
+**Super Analyst (v1.0.56 enhanced):**
 - 3-tier complexity detection: simple → direct answer, medium → 1 framework, complex → 2-3 frameworks combined
-- 12 frameworks with concise 4-5 step guides (not 600-word prompts)
+- 12 analysis frameworks with concise 4-5 step guides
+- **Research methodology** (new): source hierarchy (primary/secondary/tertiary), credibility assessment, triangulation verification
 - Sequential Thinking is optional, not mandatory
-- Search strategy: on-demand, not forced
 
-**Super Writer (v1.0.53+ simplified):**
+**Super Writer:**
 - 3-step workflow: Understand → Prepare (if needed) → Create
 - 6 methodologies with concrete steps:
   - **W.R.I.T.E**: Write → Research → Ideate → Target → Enhance
@@ -305,7 +311,26 @@ Skills guide Chief's thinking process. Chief then distills the framework into cl
   - **Content Writing Process**: Planning → Research → Writing → Editing → Publishing
   - **Content Creation Techniques**: Hook-Story-Offer, Problem-Agitate-Solve, etc.
   - **High-Value Content Strategies**: Deep articles, original research, expert interviews, etc.
-- Style extraction only when user explicitly requests mimicking (no verification table)
+
+**Super Fact-Checker (v1.0.56 new):**
+- Claim classification: verifiable vs non-verifiable statements
+- Priority matrix: high impact + high suspicion → must verify
+- Source credibility hierarchy: official > academic > authoritative media > general media > social
+- Annotation system: ✅ verified, ⚠️ partial, ❓ unverifiable, ❌ incorrect, 🔍 needs more
+
+**Super Editor (v1.0.56 new):**
+- 4-layer editing methodology (big to small):
+  1. Structure: overall architecture, chapter order, logic flow
+  2. Paragraph: coherence, transitions, information density
+  3. Sentence: clarity, rhythm, ambiguity
+  4. Word: precision, consistency, redundancy
+- Each layer has checklist and common problem diagnosis
+
+**Super Interviewer (v1.0.56 new):**
+- Question types: open/closed, clarifying, probing, challenging, summarizing
+- 4-phase dialogue: ice-breaking → open exploration → deep digging → summary confirmation
+- Socratic techniques: concept clarification, assumption questioning, consequence exploration
+- Chief uses this skill directly for user conversations (no delegation needed)
 
 To disable a built-in skill:
 
