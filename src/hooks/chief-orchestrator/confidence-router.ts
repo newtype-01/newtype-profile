@@ -398,3 +398,48 @@ export function detectAgentType(output: string, category?: string): AgentType | 
 export function hasConfidenceScore(output: string): boolean {
   return extractConfidence(output) !== null
 }
+
+export interface FailureJournalEntry {
+  timestamp: string
+  agentType: AgentType
+  confidence: number
+  attempts: number
+  outputExcerpt: string
+  sessionId: string
+}
+
+export function buildFailureJournalEntry(
+  agentType: AgentType,
+  confidence: number,
+  attempts: number,
+  output: string,
+  sessionId: string,
+): FailureJournalEntry {
+  const excerpt = output.slice(0, 1000).replace(/\n{3,}/g, "\n\n")
+  return {
+    timestamp: new Date().toISOString(),
+    agentType,
+    confidence,
+    attempts,
+    outputExcerpt: excerpt,
+    sessionId,
+  }
+}
+
+export function formatFailureJournalMarkdown(entry: FailureJournalEntry): string {
+  const confPct = Math.round(entry.confidence * 100)
+  return `## Escalation: ${entry.agentType} (${entry.timestamp.split("T")[0]})
+
+- **Agent**: ${entry.agentType}
+- **Confidence**: ${confPct}%
+- **Rewrite attempts**: ${entry.attempts}
+- **Session**: ${entry.sessionId}
+
+### Last Output Excerpt
+\`\`\`
+${entry.outputExcerpt}
+\`\`\`
+
+---
+`
+}

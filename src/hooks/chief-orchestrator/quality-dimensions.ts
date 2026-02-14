@@ -455,3 +455,41 @@ function getImprovementCategory(agentType: AgentType, weakDimension: string): st
 export function hasQualityScores(output: string): boolean {
   return /\*\*QUALITY SCORES:\*\*/i.test(output) || /\*\*CONFIDENCE:\s*[\d.]+\*\*/i.test(output)
 }
+
+/**
+ * Build a warning directive when an agent's output lacks quality scores.
+ * Tells Chief what dimensions to expect and how to request them.
+ */
+export function buildMissingScoresWarning(agentType: AgentType, sessionId: string): string {
+  const dimensions = AGENT_DIMENSIONS[agentType]
+  const dimList = dimensions.map(d => d.label).join(", ")
+  
+  const agentLabels: Record<AgentType, string> = {
+    "fact-checker": "FACT-CHECK",
+    researcher: "RESEARCH",
+    writer: "DRAFT",
+    editor: "EDIT",
+    archivist: "ARCHIVE",
+    extractor: "EXTRACTION",
+  }
+  const label = agentLabels[agentType]
+
+  return `\n\n---\n[${label}: QUALITY SCORES MISSING]
+
+⚠️ The ${agentType} agent did not include quality self-assessment scores.
+Without scores, the quality feedback loop cannot function.
+
+**Expected dimensions for ${agentType}:** ${dimList}
+
+**RECOMMENDED ACTION:**
+Request scores by resuming the session:
+\`\`\`
+chief_task(
+  resume="${sessionId}",
+  prompt="Please provide your quality self-assessment. Output in this format:\\n**QUALITY SCORES:**\\n${dimensions.map(d => `- ${d.label}: <0.00-1.00>`).join("\\n")}\\n**OVERALL: <0.00-1.00>**"
+)
+\`\`\`
+
+If the output quality is obviously high, you may skip this and proceed.
+---`
+}
