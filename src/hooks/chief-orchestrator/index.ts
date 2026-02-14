@@ -1,6 +1,6 @@
 import type { PluginInput } from "@opencode-ai/plugin"
 import { execSync } from "node:child_process"
-import { existsSync, readdirSync } from "node:fs"
+import { existsSync, readdirSync, appendFileSync, mkdirSync } from "node:fs"
 import { join } from "node:path"
 import {
   readBoulderState,
@@ -13,13 +13,14 @@ import { log } from "../../shared/logger"
 import type { BackgroundManager } from "../../features/background-agent"
 import { summarizeOutput, formatSummarizedOutput } from "./output-summarizer"
 import { getTrackerForSession, clearTrackerForSession } from "./task-progress-tracker"
-import { analyzeAgentOutput, hasConfidenceScore, detectAgentType, clearRewriteAttempts } from "./confidence-router"
-import { parseQualityScores, buildImprovementDirective, hasQualityScores } from "./quality-dimensions"
+import { analyzeAgentOutput, hasConfidenceScore, detectAgentType, clearRewriteAttempts, buildFailureJournalEntry, formatFailureJournalMarkdown } from "./confidence-router"
+import { parseQualityScores, buildImprovementDirective, hasQualityScores, buildMissingScoresWarning } from "./quality-dimensions"
 import type { AgentType } from "./quality-dimensions"
 import {
   parseArtifacts,
   addArtifact,
   buildContextSummary,
+  buildDetailedContextSummary,
   hasArtifacts,
   clearContext,
   type AgentType as SharedAgentType,
@@ -29,6 +30,79 @@ export const HOOK_NAME = "chief-orchestrator"
 
 const ALLOWED_PATH_PREFIX = ".chief/"
 const WRITE_EDIT_TOOLS = ["Write", "Edit", "write", "edit"]
+
+const DEPUTY_SHOULD_DELEGATE_TOOLS: Record<string, string> = {
+  web_search_exa: "researcher",
+  websearch_web_search_exa: "researcher",
+  tavily_search: "researcher",
+  tavily_extract: "researcher",
+  firecrawl_scrape: "researcher",
+  firecrawl_search: "researcher",
+  firecrawl_crawl: "researcher",
+  webfetch: "researcher",
+  context7_resolve_library_id: "researcher",
+  "context7_resolve-library-id": "researcher",
+  context7_query_docs: "researcher",
+  "context7_query-docs": "researcher",
+  grep_app_searchGitHub: "researcher",
+}
+
+function shouldDelegateToSpecialist(tool: string): boolean {
+  return tool in DEPUTY_SHOULD_DELEGATE_TOOLS
+}
+
+function getRecommendedSpecialist(tool: string): string {
+  return DEPUTY_SHOULD_DELEGATE_TOOLS[tool] ?? "researcher"
+}
+
+function buildDeputyDelegationReminder(tool: string, specialist: string): string {
+  return `
+
+---
+
+[SYSTEM REMINDER - DELEGATION RECOMMENDED]
+
+You (Deputy) are directly calling \`${tool}\`, which is a search/research tool.
+
+**Best practice**: Delegate search tasks to the **${specialist}** agent via:
+\`\`\`
+chief_task(subagent_type="${specialist}", prompt="[search task]")
+\`\`\`
+
+**Why**: The ${specialist} agent has specialized prompts for source evaluation, 
+quality scoring, and structured artifact output that you lack.
+
+**Exception**: If this is a quick one-off lookup (< 1 query), proceed.
+For systematic research (multiple queries, source comparison), delegate.
+
+---
+`
+}
+
+const FAILURE_JOURNAL_DIR = ".opencode/memory"
+const FAILURE_JOURNAL_FILE = "escalation-log.md"
+
+function writeFailureJournal(directory: string, entry: ReturnType<typeof buildFailureJournalEntry>): void {
+  try {
+    const memDir = join(directory, FAILURE_JOURNAL_DIR)
+    if (!existsSync(memDir)) {
+      mkdirSync(memDir, { recursive: true })
+    }
+    const filePath = join(memDir, FAILURE_JOURNAL_FILE)
+    const needsHeader = !existsSync(filePath)
+    if (needsHeader) {
+      appendFileSync(filePath, "# Escalation Log\n\nAutomatic failure journal for quality escalations.\n\n")
+    }
+    appendFileSync(filePath, formatFailureJournalMarkdown(entry))
+    log(`[${HOOK_NAME}] Failure journal entry written`, {
+      agentType: entry.agentType,
+      confidence: entry.confidence,
+      file: filePath,
+    })
+  } catch (err) {
+    log(`[${HOOK_NAME}] Failed to write failure journal`, { error: String(err) })
+  }
+}
 
 const DIRECT_WORK_REMINDER = `
 
@@ -595,17 +669,31 @@ export function createChiefOrchestratorHook(
         return
       }
 
+      if (callerIsDeputy && shouldDelegateToSpecialist(input.tool)) {
+        const specialist = getRecommendedSpecialist(input.tool)
+        output.message = (output.message || "") + buildDeputyDelegationReminder(input.tool, specialist)
+        log(`[${HOOK_NAME}] Deputy delegation reminder`, {
+          sessionID: input.sessionID,
+          tool: input.tool,
+          recommendedSpecialist: specialist,
+        })
+      }
+
       if (input.tool === "chief_task") {
         const prompt = output.args.prompt as string | undefined
         if (prompt && !prompt.includes("[SYSTEM DIRECTIVE - SINGLE TASK ONLY]")) {
           let enhancedPrompt = prompt
           
           if (input.sessionID) {
-            const sharedContext = buildContextSummary(input.sessionID)
+            const downstreamAgent = output.args.subagent_type as string | undefined
+            const sharedContext = buildDetailedContextSummary(input.sessionID, downstreamAgent)
+              ?? buildContextSummary(input.sessionID)
             if (sharedContext) {
               enhancedPrompt = `${sharedContext}\n\n${enhancedPrompt}`
               log(`[${HOOK_NAME}] Injected shared context to chief_task`, {
                 sessionID: input.sessionID,
+                downstreamAgent,
+                detailed: sharedContext.includes("DETAILED"),
               })
             }
           }
@@ -769,6 +857,16 @@ ${buildOrchestratorReminder(boulderState.plan_name, progress, subagentSessionId)
                 weakest: qualityAssessment.weakest?.name,
                 allPass: qualityAssessment.allPass,
               })
+              if (qualityAssessment.overall < 0.5) {
+                const journalEntry = buildFailureJournalEntry(
+                  agentType,
+                  qualityAssessment.overall,
+                  1,
+                  output.output,
+                  subagentSessionId,
+                )
+                writeFailureJournal(ctx.directory, journalEntry)
+              }
             }
           } else if (hasConfidenceScore(output.output) && agentType) {
             const confidenceResult = analyzeAgentOutput(output.output, subagentSessionId, agentType)
@@ -781,6 +879,22 @@ ${buildOrchestratorReminder(boulderState.plan_name, progress, subagentSessionId)
                 recommendation: confidenceResult.recommendation,
               })
             }
+            if (confidenceResult.recommendation === "escalate" && confidenceResult.confidence !== null) {
+              const journalEntry = buildFailureJournalEntry(
+                agentType,
+                confidenceResult.confidence,
+                3,
+                output.output,
+                subagentSessionId,
+              )
+              writeFailureJournal(ctx.directory, journalEntry)
+            }
+          } else if (agentType && !hasQualityScores(output.output) && !hasConfidenceScore(output.output)) {
+            confidenceDirective = buildMissingScoresWarning(agentType, subagentSessionId)
+            log(`[${HOOK_NAME}] Quality scores missing from agent output`, {
+              sessionID: input.sessionID,
+              agentType,
+            })
           }
 
           output.output = `${formattedSummary}
