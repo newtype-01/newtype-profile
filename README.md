@@ -21,7 +21,7 @@ Based on [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode), redes
 
 ## Overview
 
-newtype-profile is an AI Agent collaboration framework designed for **content creation**. Unlike oh-my-opencode which focuses on code programming, this project redefines the Agent system as an editorial team model, suitable for:
+newtype-profile is an AI Agent collaboration framework designed for **content creation**:
 
 - 📚 Knowledge base management
 - ✍️ Article writing and editing
@@ -30,80 +30,37 @@ newtype-profile is an AI Agent collaboration framework designed for **content cr
 
 ## Agent Team
 
-| Agent | Role | Default Model | Description |
-|-------|------|---------------|-------------|
-| **chief** | Editor-in-Chief | Claude Opus 4.5 Thinking High | Dual-mode: exploration partner + task coordinator |
-| **deputy** | Deputy Editor | Claude Sonnet 4.5 | Executes specific delegated tasks |
-| **researcher** | Intelligence Officer | Gemini 3 Pro High | Broad search, discover new information |
-| **fact-checker** | Verifier | Gemini 3 Pro High | Validate sources, assess credibility |
-| **archivist** | Librarian | Claude Sonnet 4.5 | Knowledge base retrieval, find connections |
-| **extractor** | Formatter | Gemini 3 Flash | PDF/image/document extraction |
-| **writer** | Writer | Gemini 3 Pro High | Content production, article drafting |
-| **editor** | Editor | Claude Sonnet 4.5 | Content refinement, structure optimization |
+| Agent | Role | Description |
+|-------|------|-------------|
+| **chief** | Editor-in-Chief | Dual-mode: exploration partner + task coordinator |
+| **deputy** | Deputy Editor | Executes delegated tasks |
+| **researcher** | Intelligence | Broad search, discover new information |
+| **fact-checker** | Verifier | Validate sources, assess credibility |
+| **archivist** | Librarian | Knowledge base retrieval |
+| **extractor** | Formatter | PDF/image/document extraction |
+| **writer** | Writer | Content production |
+| **editor** | Editor | Content refinement |
 
 ## Quick Start
 
-### Prerequisites
-
-1. Install [OpenCode](https://opencode.ai/docs)
-2. Install [Bun](https://bun.sh/) (only needed for local development)
-
 ### Installation
-
-#### Method 1: npm Package (Recommended)
-
-**Step 1:** Install the package:
 
 ```bash
 cd ~/.config/opencode
 bun add newtype-profile
 ```
 
-**Step 2:** Edit `~/.config/opencode/opencode.json`:
+Edit `~/.config/opencode/opencode.json`:
 
 ```json
 {
-  "plugin": [
-    "newtype-profile"
-  ]
+  "plugin": ["newtype-profile"]
 }
 ```
 
-**To update to the latest version:**
+### Configure Models
 
-```bash
-cd ~/.config/opencode
-bun update newtype-profile
-```
-
-#### Method 2: Clone to Local (Development)
-
-For development or customization:
-
-```bash
-git clone https://github.com/newtype-01/newtype-profile.git
-cd newtype-profile
-bun install
-bun run build
-```
-
-Then reference the local path in your config:
-
-```json
-{
-  "plugin": [
-    "/path/to/newtype-profile"
-  ]
-}
-```
-
-### Configure Agent Models
-
-Create or edit the newtype-profile config file.
-
-**User-level**: `~/.config/opencode/newtype-profile.json`
-
-**Project-level**: `<project>/.opencode/newtype-profile.json`
+Create `~/.config/opencode/newtype-profile.json`:
 
 ```json
 {
@@ -111,16 +68,13 @@ Create or edit the newtype-profile config file.
   "agents": {
     "chief": { "model": "google/antigravity-claude-opus-4-5-thinking-high" },
     "researcher": { "model": "google/antigravity-gemini-3-pro-high" },
-    "fact-checker": { "model": "google/antigravity-gemini-3-pro-high" },
-    "archivist": { "model": "google/antigravity-claude-sonnet-4-5" },
-    "extractor": { "model": "google/antigravity-gemini-3-flash" },
     "writer": { "model": "google/antigravity-gemini-3-pro-high" },
     "editor": { "model": "google/antigravity-claude-sonnet-4-5" }
   }
 }
 ```
 
-### Authenticate Google Antigravity
+### Authenticate
 
 ```bash
 opencode auth login
@@ -129,12 +83,6 @@ opencode auth login
 ```
 
 ## Usage
-
-### Start OpenCode
-
-```bash
-opencode
-```
 
 ### Three-Layer Architecture
 
@@ -146,314 +94,92 @@ User ↔ Chief (Editor-in-Chief)
        Specialist Agents (researcher, writer, editor...)
 ```
 
-**You only interact with Chief**. Chief automatically coordinates the team:
+**You only interact with Chief**:
 
-- **Mode 1 - Thought Partner**: When exploring ideas, Chief thinks WITH you, challenges flawed logic, and sparring.
-- **Mode 2 - Execution Coordinator**: When you have clear deliverables, Chief decomposes, delegates, and delivers.
+- **Mode 1 - Thought Partner**: Chief thinks WITH you, challenges flawed logic
+- **Mode 2 - Execution Coordinator**: Chief decomposes, delegates, and delivers
 
 ### Example Conversations
 
 ```
-# Research request - Chief delegates to researcher via Deputy
 "Help me understand the AI development trends in 2024"
-
-# Writing request - Chief coordinates writer → editor pipeline
 "Write an article about this topic based on our research"
-
-# Fact-checking request - Chief dispatches fact-checker
 "Verify the sources in this document"
-
-# Complex task - Chief orchestrates multiple agents
-"Create a comprehensive report on [topic] with verified sources"
 ```
 
-### Task Categories
+## Customization
 
-Chief uses `chief_task` to delegate tasks by category:
+### SOUL.md - Customize Chief's Personality (v1.0.60+)
 
-| Category | Purpose | Model Configuration |
-|----------|---------|---------------------|
-| `research` | Information research, trend discovery | Gemini 3 Pro High, temp 0.5 |
-| `fact-check` | Source verification, credibility assessment | Gemini 3 Pro High, temp 0.2 |
-| `archive` | Knowledge base retrieval, document linking | Claude Sonnet 4.5, temp 0.3 |
-| `writing` | Content creation, article drafting | Gemini 3 Pro High, temp 0.7 |
-| `editing` | Content refinement, structure optimization | Claude Sonnet 4.5, temp 0.3 |
-| `extraction` | PDF/image content extraction | Gemini 3 Flash, temp 0.2 |
-| `quick` | Simple quick tasks | Gemini 3 Flash, temp 0.3 |
+Chief's personality has three layers:
+- **Capabilities** (hardcoded): What Chief can do
+- **Inner Persona** (hardcoded): Core values and thinking patterns
+- **Outer Persona** (customizable): Communication style
 
-## Configuration
+Create `.opencode/SOUL.md` to customize how Chief communicates:
 
-### Model Selection
+```bash
+/init-soul  # Creates default SOUL.md template
+```
 
-All models are accessed via Google Antigravity. Available models:
+Example customizations:
+- Make Chief more formal or casual
+- Adjust language preferences
+- Change how direct Chief is
 
-**Gemini Series**
-- `google/antigravity-gemini-3-pro-high` - High quota Pro version
-- `google/antigravity-gemini-3-pro-low` - Low quota Pro version
-- `google/antigravity-gemini-3-flash` - Fast response version
+Changes take effect after restarting OpenCode.
 
-**Claude Series (via Antigravity)**
-- `google/antigravity-claude-opus-4-5-thinking-high` - High thinking budget Opus
-- `google/antigravity-claude-opus-4-5-thinking-medium` - Medium thinking budget Opus
-- `google/antigravity-claude-opus-4-5-thinking-low` - Low thinking budget Opus
-- `google/antigravity-claude-sonnet-4-5` - Sonnet 4.5
-- `google/antigravity-claude-sonnet-4-5-thinking-high` - High thinking budget Sonnet
+### Built-in Skills
 
-### Custom Agent Settings
+| Skill | Command | Description |
+|-------|---------|-------------|
+| **super-analyst** | `/super-analyst` | 12 analysis frameworks + research methodology |
+| **super-writer** | `/super-writer` | 6 writing methodologies (W.R.I.T.E, AIDA, etc.) |
+| **super-fact-checker** | `/super-fact-checker` | Claim verification with source credibility |
+| **super-editor** | `/super-editor` | 4-layer editing: structure → paragraph → sentence → word |
+| **super-interviewer** | `/super-interviewer` | Dialogue techniques for exploration |
+| **playwright** | `/playwright` | Browser automation |
 
-Override default settings in your config file:
+Chief auto-loads skills when tasks need structured frameworks.
+
+### MCP Servers
+
+Built-in MCPs:
+
+| MCP | Default | Config |
+|-----|---------|--------|
+| **websearch** (Exa) | Enabled | None |
+| **sequential-thinking** | Enabled | None |
+| **tavily** | Disabled | `api_key` |
+| **firecrawl** | Disabled | `api_key` |
+
+### Disable Features
 
 ```json
 {
-  "agents": {
-    "writer": {
-      "model": "google/antigravity-claude-sonnet-4-5",
-      "temperature": 0.8,
-      "prompt_append": "Please use a concise and lively writing style"
-    }
-  }
-}
-```
-
-### Disable Specific Agents
-
-```json
-{
-  "disabled_agents": ["fact-checker", "extractor"]
-}
-```
-
-### Disable Specific Hooks
-
-```json
-{
-  "disabled_hooks": ["comment-checker", "agent-usage-reminder"]
-}
-```
-
-### MCP Server Configuration
-
-The plugin includes built-in MCP (Model Context Protocol) servers. Configure them in your `newtype-profile.json`:
-
-```json
-{
-  "mcp": {
-    "tavily": {
-      "api_key": "tvly-your-api-key"
-    },
-    "firecrawl": {
-      "api_key": "fc-your-api-key"
-    },
-    "filesystem": {
-      "directories": ["~/Documents", "~/Projects"]
-    },
-    "sequential-thinking": true
-  }
-}
-```
-
-| MCP Server | Default | Required Config | Description |
-|------------|---------|-----------------|-------------|
-| **websearch** (Exa) | Enabled | None | Web search via Exa.ai |
-| **sequential-thinking** | Enabled | None | Structured problem-solving |
-| **tavily** | Disabled | `api_key` | Advanced web search, crawl, extract |
-| **firecrawl** | Disabled | `api_key` | Web scraping and content extraction |
-| **filesystem** | Disabled | `directories` | Local file system access |
-
-Get API keys:
-- Tavily: [tavily.com](https://tavily.com)
-- Firecrawl: [firecrawl.dev](https://firecrawl.dev)
-
-To disable a built-in MCP:
-
-```json
-{
+  "disabled_agents": ["fact-checker"],
+  "disabled_skills": ["super-analyst"],
+  "disabled_hooks": ["memory-system"],
   "disabled_mcps": ["sequential-thinking"]
 }
 ```
 
-### Built-in Skills
+## Memory System
 
-The plugin includes specialized skills that Chief can load on-demand when tasks need structured frameworks:
+Auto-saves conversation summaries to `.opencode/memory/`:
+- Daily summaries (LLM-generated)
+- Full transcripts per session
+- Auto-archive to `MEMORY.md` after 7 days
 
-| Skill | Command | Description |
-|-------|---------|-------------|
-| **playwright** | `/playwright` | Browser automation via Playwright MCP - web scraping, testing, screenshots |
-| **super-analyst** | `/super-analyst` | Analysis + research with 12 frameworks and systematic research methodology |
-| **super-writer** | `/super-writer` | Content creation with 6 methodologies (W.R.I.T.E, AIDA, Storytelling, etc.) |
-| **super-fact-checker** | `/super-fact-checker` | Systematic verification: claim extraction, source credibility, annotation |
-| **super-editor** | `/super-editor` | 4-layer editing: structure → paragraph → sentence → word |
-| **super-interviewer** | `/super-interviewer` | Dialogue techniques: open questions, 5 whys, Socratic method |
+Use `/memory-consolidate` to manually trigger consolidation.
 
-**How Chief Uses Skills:**
+## Other Features
 
-Chief automatically loads skills when the task requires structured thinking:
-- "Analyze competitor X" → Chief loads `super-analyst`, uses frameworks to guide thinking, then delegates research to Deputy
-- "Write an article about Y" → Chief loads `super-writer`, selects methodology, then gives structured instructions to Deputy → Writer
-- "Verify this data" → Chief loads `super-fact-checker`, applies verification methodology, then delegates to Deputy → Fact-Checker
-- "Polish this draft" → Chief loads `super-editor`, identifies editing layer needed, then delegates to Deputy → Editor
-- "Help me think through this" → Chief loads `super-interviewer` and uses dialogue techniques directly (no delegation)
-
-Skills guide Chief's thinking process. Chief then distills the framework into clear, actionable instructions for the execution team.
-
-**Super Analyst (v1.0.56 enhanced):**
-- 3-tier complexity detection: simple → direct answer, medium → 1 framework, complex → 2-3 frameworks combined
-- 12 analysis frameworks with concise 4-5 step guides
-- **Research methodology** (new): source hierarchy (primary/secondary/tertiary), credibility assessment, triangulation verification
-- Sequential Thinking is optional, not mandatory
-
-**Super Writer:**
-- 3-step workflow: Understand → Prepare (if needed) → Create
-- 6 methodologies with concrete steps:
-  - **W.R.I.T.E**: Write → Research → Ideate → Target → Enhance
-  - **AIDA**: Attention → Interest → Desire → Action
-  - **Storytelling**: Setup → Conflict → Journey → Climax → Resolution
-  - **Content Writing Process**: Planning → Research → Writing → Editing → Publishing
-  - **Content Creation Techniques**: Hook-Story-Offer, Problem-Agitate-Solve, etc.
-  - **High-Value Content Strategies**: Deep articles, original research, expert interviews, etc.
-
-**Super Fact-Checker (v1.0.56 new):**
-- Claim classification: verifiable vs non-verifiable statements
-- Priority matrix: high impact + high suspicion → must verify
-- Source credibility hierarchy: official > academic > authoritative media > general media > social
-- Annotation system: ✅ verified, ⚠️ partial, ❓ unverifiable, ❌ incorrect, 🔍 needs more
-
-**Super Editor (v1.0.56 new):**
-- 4-layer editing methodology (big to small):
-  1. Structure: overall architecture, chapter order, logic flow
-  2. Paragraph: coherence, transitions, information density
-  3. Sentence: clarity, rhythm, ambiguity
-  4. Word: precision, consistency, redundancy
-- Each layer has checklist and common problem diagnosis
-
-**Super Interviewer (v1.0.56 new):**
-- Question types: open/closed, clarifying, probing, challenging, summarizing
-- 4-phase dialogue: ice-breaking → open exploration → deep digging → summary confirmation
-- Socratic techniques: concept clarification, assumption questioning, consequence exploration
-- Chief uses this skill directly for user conversations (no delegation needed)
-
-To disable a built-in skill:
-
-```json
-{
-  "disabled_skills": ["super-analyst", "super-writer"]
-}
-```
-
-## Features Inherited from oh-my-opencode
-
-This project retains core capabilities from oh-my-opencode:
-
-- ✅ **Background Tasks**: Run multiple agents in parallel
-- ✅ **Todo Enforcement**: Ensure task completion
-- ✅ **Session Recovery**: Automatic error recovery
-- ✅ **Claude Code Compatibility Layer**: Support for hooks, skills, commands
-- ✅ **LSP Tools**: Code navigation and refactoring
-- ✅ **AST-Grep**: Code pattern search
-- ✅ **MCP Support**: Extended capabilities
-
-## Memory System (v1.0.41+, improved in v1.0.50)
-
-newtype-profile includes an automatic memory system for cross-session knowledge persistence:
-
-### How It Works
-
-1. **Auto-save**: When a conversation ends (session.idle), the archivist agent generates an intelligent summary and saves it to `.opencode/memory/YYYY-MM-DD.md`
-2. **Smart Filtering**: System instructions (like `[search-mode]`, `[analyze-mode]`) are automatically filtered out - only real user questions and meaningful responses are saved
-3. **LLM-Powered Summaries**: Instead of regex-based extraction, the archivist agent understands context and extracts:
-   - **Topic**: A clear, specific description of what was discussed
-   - **Key Points**: Complete thoughts, not truncated snippets
-   - **Decisions**: Any decisions made during the conversation
-   - **Tags**: Relevant topic tags for searchability
-4. **Full transcript**: A complete conversation log is stored in `.opencode/memory/full/<sessionID>.md` (overwrites per session)
-5. **Auto-archive**: Logs older than 7 days are consolidated into `.opencode/MEMORY.md`
-6. **Deep summaries**: When archiving, the archivist agent reads full transcripts for deeper summarization
-7. **AI Awareness**: Chief knows about the memory system and can query it when needed
-
-### File Structure
-
-```
-your-project/
-└── .opencode/
-    ├── MEMORY.md              # Long-term memory (archived + deep summaries)
-    └── memory/
-        ├── 2026-01-29.md      # Daily summaries (LLM-generated)
-        ├── 2026-01-28.md      # Daily summaries
-        ├── full/
-        │   ├── ses_xxxx.md    # Full transcript per session
-        │   └── ...
-        └── ...
-```
-
-### Manual Consolidation
-
-Use `/memory-consolidate` to manually trigger memory consolidation (normally automatic).
-
-### Disable Memory System
-
-```json
-{
-  "disabled_hooks": ["memory-system"]
-}
-```
-
-## Startup Config Checker (v1.0.43+)
-
-On first startup, newtype-profile automatically checks your agent model configuration and guides you through setup if needed.
-
-### How It Works
-
-1. **Auto-detect**: When OpenCode starts, the plugin checks if agents have model configurations
-2. **Smart Fallback**: If no explicit config exists but OpenCode has a default model, all agents use that model
-3. **Interactive Setup**: If configuration is missing, Chief will ask how you want to proceed:
-   - **Auto-configure**: Let Chief set up models based on available providers
-   - **Manual configure**: Get the config file path to edit yourself
-   - **Skip**: Use current configuration (may use OpenCode default model)
-
-### Configuration Status
-
-The plugin distinguishes between:
-- **Critical agents** (chief, deputy): Must have a model to function
-- **Specialist agents** (researcher, writer, etc.): Can use OpenCode default model
-
-### Disable Startup Check
-
-```json
-{
-  "disabled_hooks": ["startup-config-checker"]
-}
-```
-
-## Switch Between Plugins
-
-Use the `/switch` command to switch between OpenCode plugins:
-
-```
-/switch newtype    # Switch to newtype-profile
-/switch omo        # Switch to oh-my-opencode
-/switch none       # Disable all plugins
-```
-
-**Note**: After switching, you need to restart OpenCode (Ctrl+C, then `opencode`).
-
-The first time you use `/switch`, it automatically installs itself to `~/.config/opencode/command/switch.md`. This means the command remains available even after switching to other plugins (like oh-my-opencode), allowing you to switch back anytime.
-
-## Differences from oh-my-opencode
-
-| Aspect | oh-my-opencode | newtype-profile |
-|--------|----------------|-----------------|
-| Scenario | Code programming | Content creation |
-| Main Agent | Sisyphus | Chief (Editor-in-Chief) |
-| Sub Agents | oracle, librarian, explore... | researcher, writer, editor... |
-| Categories | visual-engineering, ultrabrain... | research, writing, editing... |
-| Tool | sisyphus_task | chief_task |
+- **Background Tasks**: Run multiple agents in parallel
+- **Session Recovery**: Auto-recover from errors
+- **Startup Config Checker**: Guides model setup on first run
+- **Plugin Switching**: `/switch newtype` / `/switch omo` / `/switch none`
 
 ## License
 
-This project is based on [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) and follows its [SUL-1.0 License](https://github.com/code-yeongyu/oh-my-opencode/blob/master/LICENSE.md).
-
-## Acknowledgments
-
-- [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) - Original project
-- [OpenCode](https://opencode.ai) - AI programming platform
-- [Google Antigravity](https://github.com/NoeFabris/opencode-antigravity-auth) - Model authentication
+Based on [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode), follows [SUL-1.0 License](https://github.com/code-yeongyu/oh-my-opencode/blob/master/LICENSE.md).

@@ -5,6 +5,7 @@ import { RALPH_LOOP_TEMPLATE, CANCEL_RALPH_TEMPLATE } from "./templates/ralph-lo
 import { SWITCH_PLUGIN_TEMPLATE } from "./templates/switch-plugin"
 import { MEMORY_CONSOLIDATE_TEMPLATE } from "./templates/memory-consolidate"
 import { CONFIGURE_MODELS_TEMPLATE } from "./templates/configure-models"
+import { INIT_SOUL_TEMPLATE } from "./templates/init-soul"
 
 const BUILTIN_COMMAND_DEFINITIONS: Record<BuiltinCommandName, Omit<CommandDefinition, "name">> = {
   "init-deep": {
@@ -117,6 +118,12 @@ ${MEMORY_CONSOLIDATE_TEMPLATE}
     description: "(builtin) Configure Agent models based on available providers",
     template: `<command-instruction>
 ${CONFIGURE_MODELS_TEMPLATE}
+</command-instruction>`,
+  },
+  "init-soul": {
+    description: "(builtin) Create or reset SOUL.md for customizing Chief's personality",
+    template: `<command-instruction>
+${INIT_SOUL_TEMPLATE}
 </command-instruction>`,
   },
 }

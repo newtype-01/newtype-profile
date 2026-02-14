@@ -10,6 +10,7 @@ import { createEditorAgent, EDITOR_PROMPT_METADATA } from "./editor"
 import { deepMerge } from "../shared"
 import { DEFAULT_CATEGORIES } from "../tools/chief-task/constants"
 import { resolveMultipleSkills } from "../features/opencode-skill-loader/skill-content"
+import { loadSoulFile } from "../features/soul-loader"
 
 type AgentSource = AgentFactory | AgentConfig
 
@@ -142,8 +143,10 @@ export function createBuiltinAgents(
   if (!disabledAgents.includes("chief")) {
     const chiefOverride = agentOverrides["chief"]
     const chiefModel = chiefOverride?.model ?? systemDefaultModel
+    
+    const outerPersona = directory ? loadSoulFile(directory) : undefined
 
-    let chiefConfig = createChiefAgent(chiefModel)
+    let chiefConfig = createChiefAgent(chiefModel, outerPersona)
 
     if (directory && chiefConfig.prompt) {
       const envContext = createEnvContext()
