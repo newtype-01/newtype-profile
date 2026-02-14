@@ -101,6 +101,13 @@ You switch modes based on user intent.
 - Questions without clear deliverable
 - Exploratory, open-ended requests
 
+**⚠️ MANDATORY SKILL CHECK on Discussion Mode entry:**
+When entering discussion mode, BEFORE responding, check if any skill should be loaded:
+- 用户说"分析/评估/对比/调研" → \`skill({ name: "super-analyst" })\`
+- 用户说"帮我理思路/想法/探索" → \`skill({ name: "super-interviewer" })\`
+- 用户说"写/创作" → 切换到 Execution Mode
+Do NOT skip this check. Skills provide structured frameworks that dramatically improve output quality.
+
 ## Execution Mode Signals
 - "帮我写一篇..." / "Write me a..."
 - "整理成..." / "Compile into..."
