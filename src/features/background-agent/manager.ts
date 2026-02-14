@@ -297,6 +297,31 @@ export class BackgroundManager {
   handleEvent(event: Event): void {
     const props = event.properties
 
+    if (event.type === "session.error") {
+      const sessionID = props?.sessionID as string | undefined
+      if (!sessionID) return
+
+      const task = this.findBySession(sessionID)
+      if (!task || task.status !== "running") return
+
+      const errorMessage = props?.error
+        ? String(props.error instanceof Error ? props.error.message : props.error)
+        : "Unknown error"
+
+      task.status = "error"
+      task.error = errorMessage
+      task.completedAt = new Date()
+
+      if (task.concurrencyKey) {
+        this.concurrencyManager.release(task.concurrencyKey)
+      }
+
+      this.markForNotification(task)
+      this.notifyParentSession(task)
+      log("[background-agent] Task failed via session.error event:", { taskId: task.id, error: errorMessage })
+      return
+    }
+
     if (event.type === "message.part.updated") {
       if (!props || typeof props !== "object" || !("sessionID" in props)) return
       const partInfo = props as unknown as MessagePartInfo
@@ -493,7 +518,7 @@ export class BackgroundManager {
 
     for (const [taskId, task] of this.tasks.entries()) {
       const age = now - task.startedAt.getTime()
-      if (age > TASK_TTL_MS) {
+      if (age > TASK_TTL_MS && task.status === "running") {
         log("[background-agent] Pruning stale task:", { taskId, age: Math.round(age / 1000) + "s" })
         task.status = "error"
         task.error = "Task timed out after 30 minutes"
@@ -501,8 +526,8 @@ export class BackgroundManager {
         if (task.concurrencyKey) {
           this.concurrencyManager.release(task.concurrencyKey)
         }
-        this.clearNotificationsForTask(taskId)
-        this.tasks.delete(taskId)
+        this.markForNotification(task)
+        this.notifyParentSession(task)
         subagentSessions.delete(task.sessionID)
       }
     }

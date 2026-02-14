@@ -249,6 +249,16 @@ export function createClaudeCodeHooksHook(
 
       const cachedInput = getToolInput(input.sessionID, input.tool, input.callID) || {}
 
+      if (!output || typeof output !== "object" || !("output" in output)) {
+        log("PostToolUse hook skipped: tool output missing", { tool: input.tool })
+        return
+      }
+
+      if (output.output === undefined || output.output === null) {
+        log("PostToolUse hook skipped: tool output empty", { tool: input.tool })
+        return
+      }
+
       // Use metadata if available and non-empty, otherwise wrap output.output in a structured object
       // This ensures plugin tools (call_omo_agent, sisyphus_task, task) that return strings
       // get their results properly recorded in transcripts instead of empty {}

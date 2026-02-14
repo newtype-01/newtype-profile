@@ -162,6 +162,7 @@ export function createSessionNotification(
   const notifiedSessions = new Set<string>()
   const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>()
   const sessionActivitySinceIdle = new Set<string>()
+  const idleEventTimestamps = new Map<string, number>()
   // Track notification execution version to handle race conditions
   const notificationVersions = new Map<string, number>()
   // Track sessions currently executing notification (prevents duplicate execution)
@@ -184,6 +185,10 @@ export function createSessionNotification(
     if (executingNotifications.size > maxSessions) {
       const sessionsToRemove = Array.from(executingNotifications).slice(0, executingNotifications.size - maxSessions)
       sessionsToRemove.forEach(id => executingNotifications.delete(id))
+    }
+    if (idleEventTimestamps.size > maxSessions) {
+      const sessionsToRemove = Array.from(idleEventTimestamps.keys()).slice(0, idleEventTimestamps.size - maxSessions)
+      sessionsToRemove.forEach(id => idleEventTimestamps.delete(id))
     }
   }
 
@@ -275,6 +280,13 @@ export function createSessionNotification(
       const sessionID = props?.sessionID as string | undefined
       if (!sessionID) return
 
+      const now = Date.now()
+      const lastIdleAt = idleEventTimestamps.get(sessionID) ?? 0
+      if (now - lastIdleAt < 500) {
+        return
+      }
+      idleEventTimestamps.set(sessionID, now)
+
       if (subagentSessions.has(sessionID)) return
 
       // Only trigger notifications for the main session (not subagent sessions)
@@ -324,6 +336,7 @@ export function createSessionNotification(
         sessionActivitySinceIdle.delete(sessionInfo.id)
         notificationVersions.delete(sessionInfo.id)
         executingNotifications.delete(sessionInfo.id)
+        idleEventTimestamps.delete(sessionInfo.id)
       }
     }
   }

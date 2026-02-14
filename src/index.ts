@@ -69,7 +69,7 @@ import { BackgroundManager } from "./features/background-agent";
 import { SkillMcpManager } from "./features/skill-mcp-manager";
 import { initTaskToastManager } from "./features/task-toast-manager";
 import { type HookName } from "./config";
-import { log, detectExternalNotificationPlugin, getNotificationConflictWarning } from "./shared";
+import { log, detectExternalNotificationPlugin, getNotificationConflictWarning, safeCreateHook } from "./shared";
 import { loadPluginConfig } from "./plugin-config";
 import { createModelCacheState, getModelLimit } from "./plugin-state";
 import { createConfigHandler } from "./plugin-handlers";
@@ -85,10 +85,10 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
   const modelCacheState = createModelCacheState();
 
   const contextWindowMonitor = isHookEnabled("context-window-monitor")
-    ? createContextWindowMonitorHook(ctx)
+    ? safeCreateHook("context-window-monitor", () => createContextWindowMonitorHook(ctx))
     : null;
   const sessionRecovery = isHookEnabled("session-recovery")
-    ? createSessionRecoveryHook(ctx, { experimental: pluginConfig.experimental })
+    ? safeCreateHook("session-recovery", () => createSessionRecoveryHook(ctx, { experimental: pluginConfig.experimental }))
     : null;
   
   // Check for conflicting notification plugins before creating session-notification
@@ -105,96 +105,118 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
         allPlugins: externalNotifier.allPlugins,
       });
     } else {
-      sessionNotification = createSessionNotification(ctx);
+      sessionNotification = safeCreateHook("session-notification", () => createSessionNotification(ctx));
     }
   }
 
   const commentChecker = isHookEnabled("comment-checker")
-    ? createCommentCheckerHooks(pluginConfig.comment_checker)
+    ? safeCreateHook("comment-checker", () => createCommentCheckerHooks(pluginConfig.comment_checker))
     : null;
   const toolOutputTruncator = isHookEnabled("tool-output-truncator")
-    ? createToolOutputTruncatorHook(ctx, {
+    ? safeCreateHook("tool-output-truncator", () => createToolOutputTruncatorHook(ctx, {
         experimental: pluginConfig.experimental,
-      })
+      }))
     : null;
   const directoryAgentsInjector = isHookEnabled("directory-agents-injector")
-    ? createDirectoryAgentsInjectorHook(ctx)
+    ? safeCreateHook("directory-agents-injector", () => createDirectoryAgentsInjectorHook(ctx))
     : null;
   const directoryReadmeInjector = isHookEnabled("directory-readme-injector")
-    ? createDirectoryReadmeInjectorHook(ctx)
+    ? safeCreateHook("directory-readme-injector", () => createDirectoryReadmeInjectorHook(ctx))
     : null;
   const emptyTaskResponseDetector = isHookEnabled("empty-task-response-detector")
-    ? createEmptyTaskResponseDetectorHook(ctx)
+    ? safeCreateHook("empty-task-response-detector", () => createEmptyTaskResponseDetectorHook(ctx))
     : null;
-  const thinkMode = isHookEnabled("think-mode") ? createThinkModeHook() : null;
-  const claudeCodeHooks = createClaudeCodeHooksHook(
-    ctx,
-    {
-      disabledHooks: (pluginConfig.claude_code?.hooks ?? true) ? undefined : true,
-      keywordDetectorDisabled: !isHookEnabled("keyword-detector"),
-    },
-    contextCollector
-  );
+  const thinkMode = isHookEnabled("think-mode") ? safeCreateHook("think-mode", () => createThinkModeHook()) : null;
+  const defaultClaudeCodeHooks: ReturnType<typeof createClaudeCodeHooksHook> = {
+    "experimental.session.compacting": async () => {},
+    "chat.message": async () => {},
+    "tool.execute.before": async () => {},
+    "tool.execute.after": async () => {},
+    event: async () => {},
+  };
+
+  const claudeCodeHooks = safeCreateHook(
+    "claude-code-hooks",
+    () => createClaudeCodeHooksHook(
+      ctx,
+      {
+        disabledHooks: (pluginConfig.claude_code?.hooks ?? true) ? undefined : true,
+        keywordDetectorDisabled: !isHookEnabled("keyword-detector"),
+      },
+      contextCollector
+    ),
+    defaultClaudeCodeHooks
+  )!;
   const anthropicContextWindowLimitRecovery = isHookEnabled(
     "anthropic-context-window-limit-recovery"
   )
-    ? createAnthropicContextWindowLimitRecoveryHook(ctx, {
+    ? safeCreateHook("anthropic-context-window-limit-recovery", () => createAnthropicContextWindowLimitRecoveryHook(ctx, {
         experimental: pluginConfig.experimental,
         dcpForCompaction: pluginConfig.experimental?.dcp_for_compaction,
-      })
+      }))
     : null;
   const compactionContextInjector = isHookEnabled("compaction-context-injector")
-    ? createCompactionContextInjector()
+    ? safeCreateHook("compaction-context-injector", () => createCompactionContextInjector()) ?? undefined
     : undefined;
+  const defaultPreemptiveCompaction: ReturnType<typeof createPreemptiveCompactionHook> = { event: async () => {} };
   const preemptiveCompaction = isHookEnabled("preemptive-compaction")
-    ? createPreemptiveCompactionHook(ctx, {
+    ? safeCreateHook("preemptive-compaction", () => createPreemptiveCompactionHook(ctx, {
         experimental: pluginConfig.experimental,
         onBeforeSummarize: compactionContextInjector,
         getModelLimit: (providerID, modelID) =>
           getModelLimit(modelCacheState, providerID, modelID),
-      })
+      }), defaultPreemptiveCompaction)
     : null;
   const rulesInjector = isHookEnabled("rules-injector")
-    ? createRulesInjectorHook(ctx)
+    ? safeCreateHook("rules-injector", () => createRulesInjectorHook(ctx))
     : null;
   const autoUpdateChecker = isHookEnabled("auto-update-checker")
-    ? createAutoUpdateCheckerHook(ctx, {
+    ? safeCreateHook("auto-update-checker", () => createAutoUpdateCheckerHook(ctx, {
         showStartupToast: isHookEnabled("startup-toast"),
         isChiefEnabled: pluginConfig.chief_agent?.disabled !== true,
         autoUpdate: pluginConfig.auto_update ?? true,
-      })
+      }))
     : null;
   const keywordDetector = isHookEnabled("keyword-detector")
-    ? createKeywordDetectorHook(ctx)
+    ? safeCreateHook("keyword-detector", () => createKeywordDetectorHook(ctx))
     : null;
-  const contextInjector = createContextInjectorHook(contextCollector);
+  const contextInjector = safeCreateHook("context-injector", () => createContextInjectorHook(contextCollector), {
+    "chat.message": async () => {},
+  })!;
+  const defaultContextInjectorMessagesTransform: ReturnType<typeof createContextInjectorMessagesTransformHook> = {
+    "experimental.chat.messages.transform": async () => {},
+  };
   const contextInjectorMessagesTransform =
-    createContextInjectorMessagesTransformHook(contextCollector);
+    safeCreateHook(
+      "context-injector-messages-transform",
+      () => createContextInjectorMessagesTransformHook(contextCollector),
+      defaultContextInjectorMessagesTransform
+    );
   const agentUsageReminder = isHookEnabled("agent-usage-reminder")
-    ? createAgentUsageReminderHook(ctx)
+    ? safeCreateHook("agent-usage-reminder", () => createAgentUsageReminderHook(ctx))
     : null;
   const nonInteractiveEnv = isHookEnabled("non-interactive-env")
-    ? createNonInteractiveEnvHook(ctx)
+    ? safeCreateHook("non-interactive-env", () => createNonInteractiveEnvHook(ctx))
     : null;
   const interactiveBashSession = isHookEnabled("interactive-bash-session")
-    ? createInteractiveBashSessionHook(ctx)
+    ? safeCreateHook("interactive-bash-session", () => createInteractiveBashSessionHook(ctx))
     : null;
   const emptyMessageSanitizer = isHookEnabled("empty-message-sanitizer")
-    ? createEmptyMessageSanitizerHook()
+    ? safeCreateHook("empty-message-sanitizer", () => createEmptyMessageSanitizerHook())
     : null;
   const thinkingBlockValidator = isHookEnabled("thinking-block-validator")
-    ? createThinkingBlockValidatorHook()
+    ? safeCreateHook("thinking-block-validator", () => createThinkingBlockValidatorHook())
     : null;
 
   const ralphLoop = isHookEnabled("ralph-loop")
-    ? createRalphLoopHook(ctx, {
+    ? safeCreateHook("ralph-loop", () => createRalphLoopHook(ctx, {
         config: pluginConfig.ralph_loop,
         checkSessionExists: async (sessionId) => sessionExists(sessionId),
-      })
+      }))
     : null;
 
   const editErrorRecovery = isHookEnabled("edit-error-recovery")
-    ? createEditErrorRecoveryHook(ctx)
+    ? safeCreateHook("edit-error-recovery", () => createEditErrorRecoveryHook(ctx))
     : null;
 
   if (pluginConfig.confidence) {
@@ -202,29 +224,31 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
   }
 
   const chiefOrchestrator = isHookEnabled("chief-orchestrator")
-    ? createChiefOrchestratorHook(ctx)
+    ? safeCreateHook("chief-orchestrator", () => createChiefOrchestratorHook(ctx))
     : null;
 
   const prometheusMdOnly = isHookEnabled("prometheus-md-only")
-    ? createPrometheusMdOnlyHook(ctx)
+    ? safeCreateHook("prometheus-md-only", () => createPrometheusMdOnlyHook(ctx))
     : null;
 
   const memorySystem = isHookEnabled("memory-system")
-    ? createMemorySystemHook(ctx)
+    ? safeCreateHook("memory-system", () => createMemorySystemHook(ctx))
     : null;
 
   const startupConfigChecker = isHookEnabled("startup-config-checker")
-    ? createStartupConfigCheckerHook(ctx, pluginConfig)
+    ? safeCreateHook("startup-config-checker", () => createStartupConfigCheckerHook(ctx, pluginConfig))
     : null;
 
-  const taskResumeInfo = createTaskResumeInfoHook();
+  const taskResumeInfo = safeCreateHook("task-resume-info", () => createTaskResumeInfoHook(), {
+    "tool.execute.after": async () => {},
+  })!;
 
   const backgroundManager = new BackgroundManager(ctx);
 
   initTaskToastManager(ctx.client);
 
   const todoContinuationEnforcer = isHookEnabled("todo-continuation-enforcer")
-    ? createTodoContinuationEnforcer(ctx, { backgroundManager })
+    ? safeCreateHook("todo-continuation-enforcer", () => createTodoContinuationEnforcer(ctx, { backgroundManager }))
     : null;
 
   if (sessionRecovery && todoContinuationEnforcer) {
@@ -235,7 +259,7 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
   }
 
   const backgroundNotificationHook = isHookEnabled("background-notification")
-    ? createBackgroundNotificationHook(backgroundManager)
+    ? safeCreateHook("background-notification", () => createBackgroundNotificationHook(backgroundManager))
     : null;
   const backgroundTools = createBackgroundTools(backgroundManager, ctx.client);
 
@@ -293,7 +317,9 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
   });
 
   const autoSlashCommand = isHookEnabled("auto-slash-command")
-    ? createAutoSlashCommandHook({ skills: mergedSkills })
+    ? safeCreateHook("auto-slash-command", () => createAutoSlashCommandHook({ skills: mergedSkills }), {
+        "chat.message": async () => {},
+      })
     : null;
 
   const googleAuthHooks = pluginConfig.google_auth !== false
@@ -400,30 +426,30 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
       input: { sessionID?: string },
       output: { system: string[] }
     ) => {
-      await startupConfigChecker?.["experimental.chat.system.transform"]?.(input, output);
+      startupConfigChecker?.["experimental.chat.system.transform"]?.(input, output);
     },
 
     config: configHandler,
 
     event: async (input) => {
-      await autoUpdateChecker?.event(input);
-      await claudeCodeHooks.event(input);
-      await backgroundNotificationHook?.event(input);
-      await sessionNotification?.(input);
-      await todoContinuationEnforcer?.handler(input);
-      await contextWindowMonitor?.event(input);
-      await directoryAgentsInjector?.event(input);
-      await directoryReadmeInjector?.event(input);
-      await rulesInjector?.event(input);
-      await thinkMode?.event(input);
-      await anthropicContextWindowLimitRecovery?.event(input);
-      await preemptiveCompaction?.event(input);
-      await agentUsageReminder?.event(input);
-      await interactiveBashSession?.event(input);
-      await ralphLoop?.event(input);
-      await chiefOrchestrator?.handler(input);
-      await memorySystem?.event(input);
-      await startupConfigChecker?.event(input);
+      autoUpdateChecker?.event(input);
+      claudeCodeHooks.event(input);
+      backgroundNotificationHook?.event(input);
+      sessionNotification?.(input);
+      todoContinuationEnforcer?.handler(input);
+      contextWindowMonitor?.event(input);
+      directoryAgentsInjector?.event(input);
+      directoryReadmeInjector?.event(input);
+      rulesInjector?.event(input);
+      thinkMode?.event(input);
+      anthropicContextWindowLimitRecovery?.event(input);
+      preemptiveCompaction?.event(input);
+      agentUsageReminder?.event(input);
+      interactiveBashSession?.event(input);
+      ralphLoop?.event(input);
+      chiefOrchestrator?.handler(input);
+      memorySystem?.event(input);
+      startupConfigChecker?.event(input);
 
       const { event } = input;
       const props = event.properties as Record<string, unknown> | undefined;
