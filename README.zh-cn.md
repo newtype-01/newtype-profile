@@ -28,22 +28,22 @@ newtype-profile 是专为**内容创作**设计的 AI Agent 协作框架：
 - 🔍 信息调研与核查
 - 📄 文档提取与整理
 
-## Agent 团队
+## 两种使用方式
 
-| Agent | 角色 | 职责描述 |
-|-------|------|---------|
-| **chief** | 主编 | 双模式：探讨伙伴 + 执行协调 |
-| **deputy** | 副主编 | 执行委派任务 |
-| **researcher** | 情报员 | 广度搜索、发现新信息 |
-| **fact-checker** | 核查员 | 验证来源、评估可信度 |
-| **archivist** | 资料员 | 知识库检索 |
-| **extractor** | 格式员 | PDF/图片/文档提取 |
-| **writer** | 写手 | 内容生产 |
-| **editor** | 编辑 | 内容精炼 |
+### 方式 A：Newtype CLI（推荐）
 
-## 快速开始
+[**Newtype CLI**](https://www.npmjs.com/package/newtype-cli) 是独立的终端 AI 助手，已内置 newtype-profile。无需额外配置插件，安装即用。
 
-### 安装
+```bash
+npm install -g newtype-cli
+newtype
+```
+
+Newtype CLI 基于 [OpenCode](https://github.com/anomalyco/opencode) 定制，预配置了完整的 Agent 团队。
+
+### 方式 B：作为 OpenCode 插件
+
+如果你已在使用 OpenCode，可以将 newtype-profile 作为插件添加：
 
 ```bash
 cd ~/.config/opencode
@@ -58,29 +58,62 @@ bun add newtype-profile
 }
 ```
 
-### 配置模型
+## Agent 团队
 
-创建 `~/.config/opencode/newtype-profile.json`：
+| Agent | 角色 | 职责描述 |
+|-------|------|---------|
+| **chief** | 主编 | 双模式：探讨伙伴 + 执行协调 |
+| **deputy** | 副主编 | 执行委派任务 |
+| **researcher** | 情报员 | 广度搜索、发现新信息 |
+| **fact-checker** | 核查员 | 验证来源、评估可信度 |
+| **archivist** | 资料员 | 知识库检索 |
+| **extractor** | 格式员 | PDF/图片/文档提取 |
+| **writer** | 写手 | 内容生产 |
+| **editor** | 编辑 | 内容精炼 |
+
+## 配置模型
+
+创建配置文件来自定义各 Agent 使用的模型：
+
+- **Newtype CLI**：`~/.config/newtype/newtype-profile.json`
+- **OpenCode 插件**：`~/.config/opencode/newtype-profile.json`
+
+```json
+{
+  "agents": {
+    "chief": { "model": "你偏好的模型" },
+    "deputy": { "model": "你偏好的模型" },
+    "researcher": { "model": "你偏好的模型" },
+    "writer": { "model": "你偏好的模型", "temperature": 0.7 }
+  }
+}
+```
+
+全部 8 个 Agent（`chief`、`deputy`、`researcher`、`fact-checker`、`archivist`、`extractor`、`writer`、`editor`）均可独立配置。
+
+<details>
+<summary>可选：Google Antigravity OAuth</summary>
+
+如果使用 Google Antigravity 作为模型提供商，添加 `google_auth`：
 
 ```json
 {
   "google_auth": true,
   "agents": {
-    "chief": { "model": "google/antigravity-claude-opus-4-5-thinking-high" },
-    "researcher": { "model": "google/antigravity-gemini-3-pro-high" },
-    "writer": { "model": "google/antigravity-gemini-3-pro-high" },
-    "editor": { "model": "google/antigravity-claude-sonnet-4-5" }
+    "chief": { "model": "google/antigravity-claude-opus-4-5-thinking-high" }
   }
 }
 ```
 
-### 认证
+然后认证：
 
 ```bash
 opencode auth login
 # 选择 Provider: Google
 # 选择 Login method: OAuth with Google (Antigravity)
 ```
+
+</details>
 
 ## 使用方式
 
@@ -116,7 +149,7 @@ Chief 的人格分三层：
 - **里人格**（硬编码）：核心价值观和思维方式
 - **表人格**（可自定义）：沟通风格
 
-创建 `.opencode/SOUL.md` 来自定义 Chief 的沟通风格：
+创建 `.opencode/SOUL.md`（Newtype CLI 为 `.newtype/SOUL.md`）来自定义 Chief 的沟通风格：
 
 ```bash
 /init-soul  # 创建默认 SOUL.md 模板
@@ -127,7 +160,7 @@ Chief 的人格分三层：
 - 调整语言偏好
 - 改变直接程度
 
-修改后重启 OpenCode 生效。
+修改后重启生效。
 
 ### 内置 Skills
 
@@ -166,7 +199,7 @@ Chief 在任务需要时自动加载技能。
 
 ## 记忆系统
 
-自动保存对话摘要到 `.opencode/memory/`：
+自动保存对话摘要到 `.opencode/memory/`（Newtype CLI 为 `.newtype/memory/`）：
 - 每日摘要（LLM 生成）
 - 每个 session 的完整记录
 - 7 天后自动归档到 `MEMORY.md`
@@ -179,6 +212,21 @@ Chief 在任务需要时自动加载技能。
 - **会话恢复**：自动从错误中恢复
 - **启动配置检查**：首次运行时引导模型设置
 - **插件切换**：`/switch newtype` / `/switch omo` / `/switch none`
+
+## Newtype CLI
+
+[Newtype CLI](https://www.npmjs.com/package/newtype-cli) 是独立产品，将 newtype-profile 打包为开箱即用的终端 AI 助手。
+
+| | newtype-profile（插件） | Newtype CLI |
+|---|---|---|
+| **安装** | 在 OpenCode 中 `bun add newtype-profile` | `npm install -g newtype-cli` |
+| **依赖** | 需要单独安装 OpenCode | 无需其他依赖，自包含 |
+| **启动** | `opencode` | `newtype` |
+| **配置目录** | `~/.config/opencode/` | `~/.config/newtype/` |
+| **项目目录** | `.opencode/` | `.newtype/` |
+| **npm 包** | [newtype-profile](https://www.npmjs.com/package/newtype-profile) | [newtype-cli](https://www.npmjs.com/package/newtype-cli) |
+
+支持平台：macOS（Apple Silicon 和 Intel）、Linux（x64 和 ARM64，glibc 和 musl）、Windows（x64）。
 
 ## 许可证
 

@@ -28,22 +28,22 @@ newtype-profile is an AI Agent collaboration framework designed for **content cr
 - 🔍 Information research and fact-checking
 - 📄 Document extraction and organization
 
-## Agent Team
+## Two Ways to Use
 
-| Agent | Role | Description |
-|-------|------|-------------|
-| **chief** | Editor-in-Chief | Dual-mode: exploration partner + task coordinator |
-| **deputy** | Deputy Editor | Executes delegated tasks |
-| **researcher** | Intelligence | Broad search, discover new information |
-| **fact-checker** | Verifier | Validate sources, assess credibility |
-| **archivist** | Librarian | Knowledge base retrieval |
-| **extractor** | Formatter | PDF/image/document extraction |
-| **writer** | Writer | Content production |
-| **editor** | Editor | Content refinement |
+### Option A: Newtype CLI (Recommended)
 
-## Quick Start
+[**Newtype CLI**](https://www.npmjs.com/package/newtype-cli) is a standalone terminal AI assistant with newtype-profile built-in. No plugin setup needed — install and go.
 
-### Installation
+```bash
+npm install -g newtype-cli
+newtype
+```
+
+Newtype CLI is a white-labeled fork of [OpenCode](https://github.com/anomalyco/opencode) with the full agent team pre-configured.
+
+### Option B: As an OpenCode Plugin
+
+If you already use OpenCode and want to add newtype-profile as a plugin:
 
 ```bash
 cd ~/.config/opencode
@@ -58,29 +58,62 @@ Edit `~/.config/opencode/opencode.json`:
 }
 ```
 
-### Configure Models
+## Agent Team
 
-Create `~/.config/opencode/newtype-profile.json`:
+| Agent | Role | Description |
+|-------|------|-------------|
+| **chief** | Editor-in-Chief | Dual-mode: exploration partner + task coordinator |
+| **deputy** | Deputy Editor | Executes delegated tasks |
+| **researcher** | Intelligence | Broad search, discover new information |
+| **fact-checker** | Verifier | Validate sources, assess credibility |
+| **archivist** | Librarian | Knowledge base retrieval |
+| **extractor** | Formatter | PDF/image/document extraction |
+| **writer** | Writer | Content production |
+| **editor** | Editor | Content refinement |
+
+## Configure Models
+
+Create a config file to customize which models each agent uses:
+
+- **Newtype CLI**: `~/.config/newtype/newtype-profile.json`
+- **OpenCode plugin**: `~/.config/opencode/newtype-profile.json`
+
+```json
+{
+  "agents": {
+    "chief": { "model": "your-preferred-model" },
+    "deputy": { "model": "your-preferred-model" },
+    "researcher": { "model": "your-preferred-model" },
+    "writer": { "model": "your-preferred-model", "temperature": 0.7 }
+  }
+}
+```
+
+All 8 agents (`chief`, `deputy`, `researcher`, `fact-checker`, `archivist`, `extractor`, `writer`, `editor`) can be configured independently.
+
+<details>
+<summary>Optional: Google Antigravity OAuth</summary>
+
+If using Google Antigravity as your model provider, add `google_auth`:
 
 ```json
 {
   "google_auth": true,
   "agents": {
-    "chief": { "model": "google/antigravity-claude-opus-4-5-thinking-high" },
-    "researcher": { "model": "google/antigravity-gemini-3-pro-high" },
-    "writer": { "model": "google/antigravity-gemini-3-pro-high" },
-    "editor": { "model": "google/antigravity-claude-sonnet-4-5" }
+    "chief": { "model": "google/antigravity-claude-opus-4-5-thinking-high" }
   }
 }
 ```
 
-### Authenticate
+Then authenticate:
 
 ```bash
 opencode auth login
 # Select Provider: Google
 # Select Login method: OAuth with Google (Antigravity)
 ```
+
+</details>
 
 ## Usage
 
@@ -116,7 +149,7 @@ Chief's personality has three layers:
 - **Inner Persona** (hardcoded): Core values and thinking patterns
 - **Outer Persona** (customizable): Communication style
 
-Create `.opencode/SOUL.md` to customize how Chief communicates:
+Create `.opencode/SOUL.md` (or `.newtype/SOUL.md` for Newtype CLI) to customize how Chief communicates:
 
 ```bash
 /init-soul  # Creates default SOUL.md template
@@ -127,7 +160,7 @@ Example customizations:
 - Adjust language preferences
 - Change how direct Chief is
 
-Changes take effect after restarting OpenCode.
+Changes take effect after restarting.
 
 ### Built-in Skills
 
@@ -166,7 +199,7 @@ Built-in MCPs:
 
 ## Memory System
 
-Auto-saves conversation summaries to `.opencode/memory/`:
+Auto-saves conversation summaries to `.opencode/memory/` (or `.newtype/memory/`):
 - Daily summaries (LLM-generated)
 - Full transcripts per session
 - Auto-archive to `MEMORY.md` after 7 days
@@ -179,6 +212,21 @@ Use `/memory-consolidate` to manually trigger consolidation.
 - **Session Recovery**: Auto-recover from errors
 - **Startup Config Checker**: Guides model setup on first run
 - **Plugin Switching**: `/switch newtype` / `/switch omo` / `/switch none`
+
+## Newtype CLI
+
+[Newtype CLI](https://www.npmjs.com/package/newtype-cli) is a standalone product that bundles newtype-profile into a ready-to-use terminal AI assistant.
+
+| | newtype-profile (plugin) | Newtype CLI |
+|---|---|---|
+| **Install** | `bun add newtype-profile` in OpenCode | `npm install -g newtype-cli` |
+| **Requires** | OpenCode installed separately | Nothing — self-contained |
+| **Launch** | `opencode` | `newtype` |
+| **Config dir** | `~/.config/opencode/` | `~/.config/newtype/` |
+| **Project dir** | `.opencode/` | `.newtype/` |
+| **npm package** | [newtype-profile](https://www.npmjs.com/package/newtype-profile) | [newtype-cli](https://www.npmjs.com/package/newtype-cli) |
+
+Supported platforms: macOS (Apple Silicon & Intel), Linux (x64 & ARM64, glibc & musl), Windows (x64).
 
 ## License
 
