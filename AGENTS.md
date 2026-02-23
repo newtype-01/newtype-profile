@@ -162,6 +162,34 @@ import { spawn } from "node:child_process"
 import { writeFile } from "node:fs/promises"
 ```
 
+## STANDALONE PLUGIN vs EMBEDDED PLUGIN (CRITICAL)
+
+newtype-profile 存在两个版本，代码已经产生差异，**不能混用**：
+
+| | 独立插件 (本仓库) | 内嵌插件 (newtype-cli) |
+|---|---|---|
+| **仓库** | `newtype-profile` | `newtype-cli/packages/newtype-profile/` |
+| **用途** | 作为 OpenCode 插件安装 | 内嵌在 Newtype CLI 产品中 |
+| **配置路径** | `~/.config/opencode/newtype-profile.json` | `~/.config/newtype/newtype-profile.json` |
+| **项目路径** | `<project>/.opencode/` | `<project>/.newtype/` |
+| **品牌文案** | 保持 OpenCode 相关措辞 | 所有用户可见文案改为 "Newtype" |
+| **config scope** | `"opencode"` | `"newtype"` |
+| **发布方式** | `npm publish` 独立发布 | 随 newtype-cli CI 一起构建 |
+
+### 已产生的代码差异 (v0.0.4+)
+
+内嵌版相比独立版，做了以下品牌化修改：
+
+1. **`src/plugin-config.ts`** — config scope 从 `"opencode"` 改为 `"newtype"`
+2. **`src/agents/chief.ts`** — prompt 中的路径引用 `.opencode/` → `.newtype/`（4 处）
+3. **`src/cli/install.ts`** — CLI 指令提示 `"Run opencode"` → `"Run newtype"`
+
+### 同步规则
+
+- `sync-plugin.yml` 会从本仓库同步到 newtype-cli，但**同步后需要重新应用上述品牌化修改**
+- 修改独立插件的功能代码时，不需要考虑 newtype-cli 的品牌差异
+- 修改 newtype-cli 内嵌版时，**只在 newtype-cli 仓库操作，不要修改本仓库**
+
 ## CONFIGURATION
 
 ### As standalone plugin (in OpenCode)

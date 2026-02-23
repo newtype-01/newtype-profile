@@ -28,6 +28,8 @@ import {
   session_info,
 } from "./session-manager"
 
+import { knowledge_base } from "./knowledge-base"
+
 export { sessionExists } from "./session-manager/storage"
 
 export { interactive_bash, startBackgroundCheck as startTmuxCheck } from "./interactive-bash"
@@ -76,4 +78,5 @@ export const builtinTools: Record<string, ToolDefinition> = {
   session_read,
   session_search,
   session_info,
+  knowledge_base,
 }

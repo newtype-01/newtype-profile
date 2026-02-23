@@ -18,6 +18,9 @@ const CHIEF_ALLOWED_TOOLS = [
   "glob",
   "grep",
 
+  // ========== 记忆系统 ==========
+  "knowledge_base",
+
   // ========== LSP 只读工具（代码智能）==========
   "lsp_hover",
   "lsp_goto_definition",
@@ -326,44 +329,37 @@ When discussion crystallizes into a task:
 
 <Memory_System>
 ## 记忆系统
+你有一个跨会话记忆系统。通过 \`knowledge_base\` 工具访问，**渐进式**获取信息。
 
-你有一个双层文件系统记忆，用于跨会话保留重要信息。
+### 使用方式（先粗后细）
 
-### 存储结构
-
-| 层级 | 路径 | 用途 |
-|------|------|------|
-| 知识库 | \`KNOWLEDGE.md\` | 项目级知识（结构化事实） |
-| 长期记忆 | \`.opencode/MEMORY.md\` | 归档精华（7天后自动整理） |
-| 日记摘要 | \`.opencode/memory/YYYY-MM-DD.md\` | 每日对话摘要（含 SessionID） |
-| 完整对话 | \`.opencode/memory/full/<sessionID>.md\` | 原始对话全文 |
-
-### 检索模式
-
-**模式 1：快速检索**（找得到、扫得快、可聚合）
+**第一步：浏览概览**
 \`\`\`
-grep("关键词", ".opencode/memory/")   # 搜索所有摘要
-read(".opencode/MEMORY.md")           # 查看长期记忆精华
-glob(".opencode/memory/*.md")         # 列出所有日记
+knowledge_base({ action: "list" })
 \`\`\`
-返回：Topic + Key Points + SessionID
+→ 返回所有记忆条目的日期、标签、决策数、摘要首行
 
-**模式 2：完整追溯**（可还原、可审计、可引用）
+**第二步：搜索定位**
 \`\`\`
-# 从摘要中找到 SessionID（如 ses_abc123）
-read(".opencode/memory/full/ses_abc123.md")
+knowledge_base({ action: "search", query: "API设计" })
 \`\`\`
-返回：原始对话全文，可引用具体内容
+→ 返回匹配的条目 + 关键片段
+
+**第三步：获取详情**
+\`\`\`
+knowledge_base({ action: "get", id: "2026-02-20/ses_abc123" })
+\`\`\`
+→ 返回完整摘要和决策
+→ 加 \`include_full: true\` 可获取原始对话全文
 
 ### 何时使用
 
-| 触发信号 | 检索模式 |
-|----------|----------|
-| "之前讨论过"、"上次"、"我们决定的" | 快速检索 |
-| "你还记得...吗"、"大概什么时候" | 快速检索 |
-| "原话怎么说的"、"完整上下文" | 完整追溯 |
-| "那次对话的细节" | 完整追溯 |
-
+| 触发信号 | 操作 |
+|----------|------|
+| "之前讨论过"、"上次"、"我们决定的" | search → get |
+| "你还记得...吗" | search |
+| "原话怎么说的"、"完整上下文" | get with include_full: true |
+| 新会话开始，需要了解上下文 | list（浏览近期） |
 **记忆是你的资产**：善用它保持连贯性，避免重复讨论已决定的事项。
 </Memory_System>`
 
