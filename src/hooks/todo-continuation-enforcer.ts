@@ -36,6 +36,7 @@ interface SessionState {
   countdownInterval?: ReturnType<typeof setInterval>
   isRecovering?: boolean
   countdownStartedAt?: number
+  injectionCount: number
 }
 
 const CONTINUATION_PROMPT = `[SYSTEM REMINDER - TODO CONTINUATION]
@@ -48,6 +49,7 @@ Incomplete tasks remain in your todo list. Continue working on the next pending 
 
 const COUNTDOWN_SECONDS = 2
 const TOAST_DURATION_MS = 900
+const MAX_INJECTIONS = 3
 const COUNTDOWN_GRACE_PERIOD_MS = 500
 
 function getMessageDir(sessionID: string): string | null {
@@ -98,7 +100,7 @@ export function createTodoContinuationEnforcer(
   function getState(sessionID: string): SessionState {
     let state = sessions.get(sessionID)
     if (!state) {
-      state = {}
+      state = { injectionCount: 0 }
       sessions.set(sessionID, state)
     }
     return state
@@ -158,7 +160,10 @@ export function createTodoContinuationEnforcer(
       return
     }
 
-
+    if (state && state.injectionCount >= MAX_INJECTIONS) {
+      log(`[${HOOK_NAME}] Skipped injection: max retries reached (${MAX_INJECTIONS})`, { sessionID, injectionCount: state.injectionCount })
+      return
+    }
 
     const hasRunningBgTasks = backgroundManager
       ? backgroundManager.getTasksByParentSession(sessionID).some(t => t.status === "running")
@@ -219,6 +224,9 @@ export function createTodoContinuationEnforcer(
       })
 
       log(`[${HOOK_NAME}] Injection successful`, { sessionID })
+      if (state) {
+        state.injectionCount++
+      }
     } catch (err) {
       log(`[${HOOK_NAME}] Injection failed`, { sessionID, error: String(err) })
     }
