@@ -1,11 +1,17 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import type { Tool, Resource, Prompt } from "@modelcontextprotocol/sdk/types.js"
+import type { jsonSchemaValidator as JsonSchemaValidatorInterface } from "@modelcontextprotocol/sdk/validation"
 import type { ClaudeCodeMcpServer } from "../claude-code-mcp-loader/types"
 import { expandEnvVarsInObject } from "../claude-code-mcp-loader/env-expander"
 import { createCleanMcpEnvironment } from "./env-cleaner"
 import type { SkillMcpClientInfo, SkillMcpServerContext } from "./types"
 
+
+// Silent JSON Schema validator to prevent ajv "unknown format" warnings from polluting the TUI.
+const silentValidator = {
+  getValidator: () => (input: unknown) => ({ valid: true as const, data: input, errorMessage: undefined }),
+} as JsonSchemaValidatorInterface
 interface ManagedClient {
   client: Client
   transport: StdioClientTransport
@@ -129,7 +135,7 @@ export class SkillMcpManager {
 
     const client = new Client(
       { name: `skill-mcp-${info.skillName}-${info.serverName}`, version: "1.0.0" },
-      { capabilities: {} }
+      { capabilities: {}, jsonSchemaValidator: silentValidator }
     )
 
     try {
